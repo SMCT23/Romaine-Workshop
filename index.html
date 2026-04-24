@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Romaine Workshop</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --dg:#1A6A24;--mg:#2E7D2E;--lg:#D6EAD6;--pg:#EBF5EB;
+    --red:#B71C1C;--lred:#FFF3F3;--gold:#C8A84B;--yellow:#FFFDE7;
+    --txt:#1a1a1a;--txt2:#555;--border:#ddd;--bg:#f8faf8;--surface:#fff;
+    --sidebar:220px;
+  }
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);display:flex;min-height:100vh;font-size:14px}
+  
+  /* SIDEBAR */
+  #sidebar{width:var(--sidebar);background:var(--dg);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100;overflow-y:auto}
+  .sb-logo{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,.15)}
+  .sb-logo-title{font-family:'DM Serif Display',serif;color:#fff;font-size:16px;line-height:1.2;letter-spacing:.3px}
+  .sb-logo-sub{color:rgba(255,255,255,.6);font-size:11px;margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
+  .sb-nav{padding:12px 0;flex:1}
+  .sb-nav a{display:flex;align-items:center;gap:10px;padding:10px 16px;color:rgba(255,255,255,.75);text-decoration:none;font-size:13px;transition:all .15s;border-left:3px solid transparent;cursor:pointer}
+  .sb-nav a:hover{background:rgba(255,255,255,.1);color:#fff}
+  .sb-nav a.active{background:rgba(255,255,255,.15);color:#fff;border-left-color:#fff;font-weight:500}
+  .sb-nav .nav-icon{font-size:15px;width:20px;text-align:center}
+  .sb-section{padding:8px 16px 4px;color:rgba(255,255,255,.4);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+  
+  /* MAIN */
+  #main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column}
+  .page{display:none;flex-direction:column;min-height:100vh}
+  .page.active{display:flex}
+  .page-header{background:var(--dg);color:#fff;padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+  .page-header h1{font-family:'DM Serif Display',serif;font-size:22px;font-weight:400}
+  .page-content{padding:24px 28px;flex:1}
+  
+  /* KPI CARDS */
+  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+  .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;position:relative}
+  .kpi-card.positive{border-left:3px solid var(--mg)}
+  .kpi-card.negative{border-left:3px solid var(--red)}
+  .kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--txt2);margin-bottom:6px}
+  .kpi-value{font-size:26px;font-weight:600;color:var(--txt);line-height:1}
+  .kpi-value.pos{color:var(--mg)}
+  .kpi-value.neg{color:var(--red)}
+  .kpi-sub{font-size:11px;color:var(--txt2);margin-top:5px}
+  
+  /* SUMMARY BAR */
+  .summary-bar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 20px;display:flex;gap:32px;margin-bottom:20px;flex-wrap:wrap}
+  .summary-item{display:flex;flex-direction:column;gap:3px}
+  .summary-item label{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt2)}
+  .summary-item span{font-size:18px;font-weight:600;color:var(--txt)}
+  .summary-item span.pos{color:var(--mg)}
+  .summary-item span.neg{color:var(--red)}
+  
+  /* TABLES */
+  .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .table-header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+  .table-header h3{font-size:14px;font-weight:500}
+  table{width:100%;border-collapse:collapse}
+  thead tr{background:var(--dg);color:#fff}
+  thead th{padding:10px 14px;text-align:left;font-size:12px;font-weight:500;letter-spacing:.3px;white-space:nowrap}
+  tbody tr:nth-child(even){background:var(--pg)}
+  tbody tr:nth-child(odd){background:var(--surface)}
+  tbody tr:hover{background:var(--lg)}
+  tbody td{padding:9px 14px;font-size:13px;border-bottom:1px solid rgba(0,0,0,.04)}
+  
+  /* PILLS / BADGES */
+  .pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;letter-spacing:.3px}
+  .pill-paid{background:#e8f5e9;color:#1b5e20}
+  .pill-outstanding{background:#ffebee;color:#b71c1c}
+  .pill-partial{background:#fff8e1;color:#f57f17}
+  .pill-ca{background:var(--gold);color:#fff;font-size:10px;padding:2px 6px}
+  
+  /* BUTTONS */
+  .btn{padding:8px 16px;border-radius:6px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;transition:all .15s}
+  .btn-primary{background:var(--dg);color:#fff}.btn-primary:hover{background:var(--mg)}
+  .btn-danger{background:var(--red);color:#fff}.btn-danger:hover{opacity:.85}
+  .btn-sm{padding:5px 11px;font-size:12px}
+  .btn-outline{background:transparent;border:1px solid var(--mg);color:var(--mg)}.btn-outline:hover{background:var(--pg)}
+  
+  /* MODAL */
+  #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
+  #modal-overlay.open{display:flex}
+  .modal{background:#fff;border-radius:12px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto}
+  .modal-header{background:var(--dg);color:#fff;padding:16px 22px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center}
+  .modal-header h3{font-size:16px;font-weight:500}
+  .modal-close{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1}
+  .modal-body{padding:22px}
+  .form-row{margin-bottom:14px}
+  .form-row label{display:block;font-size:12px;font-weight:500;color:var(--txt2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+  .form-row input,.form-row select,.form-row textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--txt);background:#fff}
+  .form-row input:focus,.form-row select:focus{outline:none;border-color:var(--mg);box-shadow:0 0 0 2px rgba(46,125,46,.15)}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal-footer{padding:0 22px 22px;display:flex;gap:10px;justify-content:flex-end}
+  
+  /* TOAST */
+  #toast{position:fixed;bottom:24px;right:24px;z-index:999;display:none}
+  .toast-inner{padding:12px 20px;border-radius:8px;color:#fff;font-size:13px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+  .toast-success{background:var(--dg)}
+  .toast-error{background:var(--red)}
+  
+  /* FILTERS */
+  .filter-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+  .filter-bar select,.filter-bar input{padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;background:#fff}
+  
+  /* CHART AREA */
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px}
+  .chart-title{font-size:14px;font-weight:500;margin-bottom:16px;color:var(--txt)}
+  
+  /* WIZARD */
+  .wizard-steps{display:flex;gap:0;margin-bottom:28px}
+  .wstep{flex:1;padding:12px;text-align:center;border-bottom:3px solid var(--border);font-size:12px;color:var(--txt2);font-weight:500}
+  .wstep.active{border-bottom-color:var(--dg);color:var(--dg)}
+  .wstep.done{border-bottom-color:var(--mg);color:var(--mg)}
+  .wizard-panel{display:none}.wizard-panel.active{display:block}
+  
+  /* CA BANNER */
+  .ca-banner{background:var(--yellow);border:1px solid var(--gold);border-radius:6px;padding:10px 14px;font-size:12px;color:#666;margin:10px 0}
+  
+  /* CALC CARD */
+  .calc-card{background:var(--pg);border:1px solid var(--lg);border-radius:8px;padding:16px;margin-top:12px}
+  .calc-card .calc-line{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px}
+  .calc-card .calc-total{border-top:1px solid var(--lg);padding-top:10px;margin-top:6px;font-weight:600;font-size:15px;display:flex;justify-content:space-between}
+
+  /* GRID 2COL */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+  
+  /* SECTION TITLE */
+  .section-title{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--txt2);margin-bottom:12px;margin-top:20px;font-weight:500}
+
+  /* OVERHEAD GROUP */
+  .oh-group-header{background:var(--mg);color:#fff;padding:8px 14px;font-size:12px;font-weight:500;letter-spacing:.4px}
+  
+  /* EMPTY STATE */
+  .empty-state{text-align:center;padding:48px 24px;color:var(--txt2)}
+  .empty-state p{margin-top:8px;font-size:13px}
+
+  .action-btns{display:flex;gap:6px}
+  .highlight-row{background:var(--yellow)!important}
+  
+  /* FINANCIAL TABLE */
+  .fin-pos{color:var(--mg);font-weight:500}
+  .fin-neg{color:var(--red);font-weight:500}
+
+  #new-project-content .review-card{background:var(--pg);border-radius:8px;padding:18px 20px}
+  #new-project-content .review-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--lg);font-size:13px}
+  #new-project-content .review-row:last-child{border:none}
+  #new-project-content .review-label{color:var(--txt2)}
+  #new-project-content .review-value{font-weight:500}
+  
+  .inline-edit{background:transparent;border:none;border-bottom:1px dashed var(--border);font-family:'DM Sans',sans-serif;font-size:13px;width:90px;text-align:right;padding:2px 4px}
+  .inline-edit:focus{outline:none;border-bottom-color:var(--mg)}
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-title">Romaine<br>Workshop</div>
+    <div class="sb-logo-sub">Business Dashboard</div>
+  </div>
+  <nav class="sb-nav">
+    <a onclick="nav('dashboard')" id="nav-dashboard" class="active"><span class="nav-icon">▦</span> Dashboard</a>
+    <a onclick="nav('new-project')" id="nav-new-project"><span class="nav-icon">＋</span> New Project</a>
+    <div class="sb-section">Trackers</div>
+    <a onclick="nav('income')" id="nav-income"><span class="nav-icon">↑</span> Income</a>
+    <a onclick="nav('expenses')" id="nav-expenses"><span class="nav-icon">↓</span> Expenses</a>
+    <a onclick="nav('assets')" id="nav-assets"><span class="nav-icon">◈</span> Assets</a>
+    <a onclick="nav('liabilities')" id="nav-liabilities"><span class="nav-icon">◇</span> Liabilities</a>
+    <div class="sb-section">Analysis</div>
+    <a onclick="nav('overhead')" id="nav-overhead"><span class="nav-icon">≡</span> Overhead</a>
+    <a onclick="nav('ip-systems')" id="nav-ip-systems"><span class="nav-icon">◉</span> IP Systems</a>
+    <a onclick="nav('financial-summary')" id="nav-financial-summary"><span class="nav-icon">∑</span> Financial Summary</a>
+  </nav>
+</div>
+
+<div id="main">
+
+<!-- ═══════════════════════════════════════════════════════
+     DASHBOARD
+═══════════════════════════════════════════════════════ -->
+<div class="page active" id="page-dashboard">
+  <div class="page-header">
+    <h1>Dashboard</h1>
+    <span id="dash-date" style="font-size:12px;opacity:.7"></span>
+  </div>
+  <div class="page-content">
+    <div class="kpi-grid" id="kpi-row1"></div>
+    <div class="kpi-grid" id="kpi-row2"></div>
+    <div class="kpi-grid" id="kpi-row3"></div>
+    <div class="grid2" style="margin-top:4px">
+      <div class="chart-card">
+        <div class="chart-title">Revenue vs Expenses — Last 12 Months</div>
+        <div style="position:relative;height:220px"><canvas id="revChart" role="img" aria-label="Revenue vs Expenses line chart">Monthly revenue and expense comparison.</canvas></div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><h3>Outstanding Invoices</h3></div>
+        <table id="outstanding-table">
+          <thead><tr><th>Client</th><th>Service</th><th>Amount</th><th>Date</th><th></th></tr></thead>
+          <tbody id="outstanding-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="table-wrap" style="margin-top:20px">
+      <div class="table-header"><h3>Recent Activity</h3></div>
+      <table><thead><tr><th>Type</th><th>Description</th><th>Amount</th><th>Date</th></tr></thead>
+      <tbody id="activity-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     NEW PROJECT
+═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-new-project">
+  <div class="page-header"><h1>New Project</h1></div>
+  <div class="page-content" id="new-project-content" style="max-width:680px">
+    <div class="wizard-steps">
+      <div class="wstep active" id="ws1">1 · Project Info</div>
+      <div class="wstep" id="ws2">2 · Service & Cost</div>
+      <div class="wstep" id="ws3">3 · Review & Save</div>
+    </div>
+    <!-- Step 1 -->
+    <div class="wizard-panel active" id="wp1">
+      <div class="form-grid">
+        <div class="form-row"><label>Client Name *</label><input id="np-client" placeholder="e.g. Miller Romero" /></div>
+        <div class="form-row"><label>Date</label><input id="np-date" type="date" /></div>
+      </div>
+      <div class="form-row"><label>Project Type</label>
+        <select id="np-type">
+          <option>Architecture</option><option>Construction Management</option>
+          <option>Design-Build</option><option>Remodel</option>
+          <option>New Construction</option><option>ADU</option>
+          <option>Landscape</option><option>Engineering</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-row"><label>Notes</label><textarea id="np-notes" rows="3" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;resize:vertical"></textarea></div>
+      <button class="btn btn-primary" onclick="wpNext(1)">Next →</button>
+    </div>
+    <!-- Step 2 -->
+    <div class="wizard-panel" id="wp2">
+      <div class="form-row"><label>Service Type (CSI)</label>
+        <input id="np-search" placeholder="Search services…" style="margin-bottom:6px" oninput="filterNpServices()" />
+        <select id="np-service" size="6" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:4px" onchange="onServiceSelect()"></select>
+      </div>
+      <div id="np-ca-banner" class="ca-banner" style="display:none">⚠ Hours and/or rate based on California state average — update if you have actuals.</div>
+      <div class="form-grid">
+        <div class="form-row"><label>Estimated Hours</label><input id="np-hours" type="number" step="0.5" oninput="calcInvoice()" /></div>
+        <div class="form-row"><label>Hourly Rate ($)</label><input id="np-rate" type="number" step="0.01" oninput="calcInvoice()" /></div>
+      </div>
+      <div id="np-calc" class="calc-card" style="display:none">
+        <div class="calc-line"><span>Estimated Hours</span><span id="np-c-hrs">—</span></div>
+        <div class="calc-line"><span>Hourly Rate</span><span id="np-c-rate">—</span></div>
+        <div class="calc-line"><span>Historical Avg Cost</span><span id="np-c-hist" style="color:var(--txt2)">—</span></div>
+        <div class="calc-total"><span>Invoice Amount</span><span id="np-c-inv">—</span></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button class="btn btn-outline" onclick="wpBack(2)">← Back</button>
+        <button class="btn btn-primary" onclick="wpNext(2)">Next →</button>
+      </div>
+    </div>
+    <!-- Step 3 -->
+    <div class="wizard-panel" id="wp3">
+      <div class="review-card" id="np-review"></div>
+      <div class="form-row" style="margin-top:16px"><label>Payment Status</label>
+        <select id="np-status"><option>Outstanding</option><option>Paid</option><option>Partial</option></select>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button class="btn btn-outline" onclick="wpBack(3)">← Back</button>
+        <button class="btn btn-primary" onclick="saveNewProject()">Save Project</button>
+      </div>
+      <div id="np-success" style="display:none;margin-top:20px;padding:16px;background:var(--pg);border-radius:8px;text-align:center">
+        <div style="color:var(--mg);font-size:16px;font-weight:500;margin-bottom:8px">✓ Project saved!</div>
+        <div style="display:flex;gap:10px;justify-content:center">
+          <button class="btn btn-outline btn-sm" onclick="resetNewProject()">Add Another</button>
+          <button class="btn btn-primary btn-sm" onclick="nav('dashboard')">Go to Dashboard</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     INCOME
+═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-income">
+  <div class="page-header">
+    <h1>Income Tracker</h1>
+    <button class="btn btn-primary btn-sm" onclick="openModal('income')">+ Add Income</button>
+  </div>
+  <div class="page-content">
+    <div class="summary-bar" id="income-summary"></div>
+    <div class="filter-bar">
+      <select id="inc-filter-month" onchange="renderIncome()"><option value="">All Months</option></select>
+      <select id="inc-filter-status" onchange="renderIncome()">
+        <option value="">All Statuses</option><option>Paid</option><option>Outstanding</option><option>Partial</option>
+      </select>
+      <input placeholder="Search client…" id="inc-search" oninput="renderIncome()" style="width:180px" />
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Client</th><th>Service</th><th>Hours</th><th>Rate</th><th>Invoice</th><th>Status</th><th>Notes</th><th>Actions</th></tr></thead>
+        <tbody id="income-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     EXPENSES
+═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-expenses">
+  <div class="page-header">
+    <h1>Expense Tracker</h1>
+    <button class="btn btn-primary btn-sm" onclick="openModal('expense')">+ Add Expense</button>
+  </div>
+  <div class="page-content">
+    <div class="summary-bar" id="expense-summary"></div>
+    <div class="filter-bar">
+      <select id="exp-filter-month" onchange="renderExpenses()"><option value="">All Months</option></select>
+      <select id="exp-filter-cat" onchange="renderExpenses()">
+        <option value="">All Categories</option>
+        <option>Software</option><option>Rent/Office</option><option>Insurance</option>
+        <option>Marketing</option><option>Payroll</option><option>Materials</option>
+        <option>Subcontractor</option><option>Travel</option><option>Utilities</option><option>Misc</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Category</th><th>Vendor</th><th>Amount</th><th>Method</th><th>Notes</th><th>Actions</th></tr></thead>
+        <tbody id="expense-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     ASSETS
+═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-assets">
+  <div class="page-header">
+    <h1>Asset Register</h1>
+    <button class="btn btn-primary btn-sm" onclick="openModal('asset')">+ Add Asset</button>
+  </div>
+  <div class="page-content">
+    <div class="summary-bar" id="asset-summary"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Asset</th><th>Category</th><th>Description</th><th>Purchase Cost</th><th>Current Value</th><th>Acquired</th><th>Useful Life</th><th>Annual Depr.</th><th>Actions</th></tr></thead>
+        <tbody id="asset-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     LIABILITIES
+═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-liabilities">
+  <div class="page-header">
+    <h1>Liability Tracker</h1>
+    <button class="btn btn-primary btn-sm" onclick="openModal('liability')">+ Add Liability</button>
+  </div>
+  <div class="page-content">
+    <div class="summary-bar" id="liability-summary"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Creditor</th><th>Type</th><th>Balance</th><th>Interest Rate</th><th>Monthly Payment</th><th>Maturity</th><th>Annual Interest</th><th>Notes</th><th>Actions</th></tr></thead>
+        <tbody id="liability-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     OVERHEAD
+═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-overhead">
+  <div class="page-header"><h1>Overhead Summary</h1></div>
+  <div class="page-content">
+    <div class="summary-bar" id="overhead-summary"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Category</th><th>Item</th><th>Monthly Cost ($)</th><th>Annual Total ($)</th><th>Notes</th></tr></thead>
+        <tbody id="overhead-body"></tbody>
+        <tfoot id="overhead-foot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     IP SYSTEMS
+═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-ip-systems">
+  <div class="page-header"><h1>IP Systems Tracker</h1></div>
+  <div class="page-content">
+    <div class="summary-bar" id="ip-summary"></div>
+    <div class="filter-bar">
+      <select id="ip-filter-div" onchange="renderIP()"><option value="">All Divisions</option></select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>CSI Code</th><th>Name</th><th>Division</th><th>Est. Hours</th><th>Hourly Rate</th><th>Replacement Cost</th><th>Source</th><th>Actions</th></tr></thead>
+        <tbody id="ip-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     FINANCIAL SUMMARY
+═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-financial-summary">
+  <div class="page-header">
+    <h1>Financial Summary</h1>
+    <button class="btn btn-outline btn-sm" style="color:#fff;border-color:rgba(255,255,255,.5)" onclick="exportCSV()">Export CSV</button>
+  </div>
+  <div class="page-content">
+    <div class="summary-bar" id="fin-summary"></div>
+    <div class="table-wrap">
+      <table style="font-size:12px">
+        <thead><tr><th>Month</th><th>Revenue</th><th>Expenses</th><th>Net Income</th><th>Margin %</th><th>Outstanding</th><th>Cumul. Revenue</th><th>YTD Net</th><th>Burn Coverage</th></tr></thead>
+        <tbody id="fin-body"></tbody>
+        <tfoot id="fin-foot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- #main -->
+
+<!-- MODAL -->
+<div id="modal-overlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Add Record</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="modal-save-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"><div class="toast-inner" id="toast-inner"></div></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA LAYER
+// ═══════════════════════════════════════════════════════
+const CSI_SEED=[{"code":"01:1015","name":"Arch & Engineering","division":"General Conditions","avg_total":18092.18,"avg_hrs":null,"hourly_rate":null},{"code":"01:1040","name":"Client Support & Selection Development","division":"General Conditions","avg_total":36785.23,"avg_hrs":595.3,"hourly_rate":74},{"code":"01:1045","name":"Supervision","division":"General Conditions","avg_total":54082.03,"avg_hrs":2189.8,"hourly_rate":76.5},{"code":"01:1510","name":"Temporary Utilities","division":"General Conditions","avg_total":3633.17,"avg_hrs":4031.7,"hourly_rate":null},{"code":"01:1512","name":"General Labor","division":"General Conditions","avg_total":15734.47,"avg_hrs":583.9,"hourly_rate":54},{"code":"01:1560","name":"Daily Jobsite Cleanup","division":"General Conditions","avg_total":13524.8,"avg_hrs":399.3,"hourly_rate":54},{"code":"01:1565","name":"Landfill and Recycling","division":"General Conditions","avg_total":3932.21,"avg_hrs":3887.5,"hourly_rate":null},{"code":"02:2110","name":"Hauling","division":"Sitework","avg_total":80256.83,"avg_hrs":null,"hourly_rate":null},{"code":"02:2210","name":"Grading","division":"Sitework","avg_total":73653.97,"avg_hrs":null,"hourly_rate":null},{"code":"02:2212","name":"Finish Grading","division":"Sitework","avg_total":4926.89,"avg_hrs":null,"hourly_rate":null},{"code":"02:2270","name":"Erosion Control","division":"Sitework","avg_total":9689.8,"avg_hrs":null,"hourly_rate":null},{"code":"02:2500","name":"Paving","division":"Sitework","avg_total":59892.71,"avg_hrs":null,"hourly_rate":7.18},{"code":"02:2670","name":"Water Well","division":"Sitework","avg_total":23030.92,"avg_hrs":null,"hourly_rate":null},{"code":"02:2740","name":"Septic","division":"Sitework","avg_total":25766.05,"avg_hrs":1350,"hourly_rate":15.45},{"code":"02:2780","name":"General Utilities","division":"Sitework","avg_total":59612.03,"avg_hrs":null,"hourly_rate":null},{"code":"02:2830","name":"Fences","division":"Sitework","avg_total":39973.51,"avg_hrs":null,"hourly_rate":null},{"code":"02:2900","name":"Landscaping","division":"Sitework","avg_total":152879.25,"avg_hrs":null,"hourly_rate":null},{"code":"03:3100","name":"Concrete","division":"Concrete","avg_total":238842.7,"avg_hrs":null,"hourly_rate":null},{"code":"03:3320","name":"Flatwork","division":"Concrete","avg_total":49159.29,"avg_hrs":null,"hourly_rate":null},{"code":"03:3350","name":"Concrete Floor Finishing","division":"Concrete","avg_total":11292.87,"avg_hrs":null,"hourly_rate":6.93},{"code":"04:4200","name":"Masonry","division":"Masonry","avg_total":44994.68,"avg_hrs":1060,"hourly_rate":46.19},{"code":"04:4450","name":"Stone Veneer Masonry","division":"Masonry","avg_total":162350.08,"avg_hrs":1060,"hourly_rate":55.15},{"code":"04:4465","name":"Granite Surfaces","division":"Masonry","avg_total":27082.73,"avg_hrs":null,"hourly_rate":null},{"code":"05:5100","name":"Structural Metal","division":"Metals","avg_total":116394.99,"avg_hrs":null,"hourly_rate":null},{"code":"05:5700","name":"Ornamental Ironwork","division":"Metals","avg_total":29168.09,"avg_hrs":null,"hourly_rate":null},{"code":"06:6100","name":"Framing Materials and Labor","division":"Wood & Plastics","avg_total":211434.82,"avg_hrs":3563.9,"hourly_rate":59.54},{"code":"06:6110","name":"Siding Materials & Labor","division":"Wood & Plastics","avg_total":56449.93,"avg_hrs":1846.5,"hourly_rate":24.16},{"code":"06:6110b","name":"Siding - Metals","division":"Wood & Plastics","avg_total":87486.76,"avg_hrs":2275,"hourly_rate":41.63},{"code":"06:6120","name":"Decking Materials & Labor","division":"Wood & Plastics","avg_total":25266.8,"avg_hrs":300,"hourly_rate":34.68},{"code":"06:6200","name":"Finish Carpentry","division":"Wood & Plastics","avg_total":28289.66,"avg_hrs":null,"hourly_rate":null},{"code":"06:6400","name":"Cabinets","division":"Wood & Plastics","avg_total":119935.13,"avg_hrs":null,"hourly_rate":null},{"code":"07:7200","name":"Insulation","division":"Thermal & Moisture","avg_total":42359.32,"avg_hrs":3862.3,"hourly_rate":13.28},{"code":"07:7300a","name":"Roofing - Tile","division":"Thermal & Moisture","avg_total":127489.28,"avg_hrs":7324.8,"hourly_rate":16.1},{"code":"07:7300b","name":"Roofing - Metal","division":"Thermal & Moisture","avg_total":117252.3,"avg_hrs":4842,"hourly_rate":12.74},{"code":"07:7300c","name":"Roofing - Composite","division":"Thermal & Moisture","avg_total":9970,"avg_hrs":1831,"hourly_rate":5.94},{"code":"07:7300d","name":"Roofing - Flat","division":"Thermal & Moisture","avg_total":40910.7,"avg_hrs":2327,"hourly_rate":17.27},{"code":"07:7300e","name":"Roofing - ALX","division":"Thermal & Moisture","avg_total":20625,"avg_hrs":554,"hourly_rate":47.19},{"code":"08:8200","name":"Interior Doors","division":"Doors & Windows","avg_total":48442.6,"avg_hrs":null,"hourly_rate":null},{"code":"08:8330","name":"Exterior Doors","division":"Doors & Windows","avg_total":12623.91,"avg_hrs":null,"hourly_rate":null},{"code":"08:8600","name":"Windows","division":"Doors & Windows","avg_total":51636.57,"avg_hrs":3559.7,"hourly_rate":18.17},{"code":"09:9200","name":"Stucco","division":"Finishes","avg_total":64309.49,"avg_hrs":2915.5,"hourly_rate":11.48},{"code":"09:9201","name":"Interior Plastering","division":"Finishes","avg_total":45753.54,"avg_hrs":null,"hourly_rate":null},{"code":"09:9250","name":"Drywall","division":"Finishes","avg_total":35765.48,"avg_hrs":8745,"hourly_rate":3.23},{"code":"09:9300","name":"Tile","division":"Finishes","avg_total":101710.14,"avg_hrs":865,"hourly_rate":130.98},{"code":"09:9550","name":"Wood Floors","division":"Finishes","avg_total":41097.61,"avg_hrs":1664.7,"hourly_rate":22.4},{"code":"09:9650","name":"Resilient Flooring","division":"Finishes","avg_total":10993.91,"avg_hrs":1413.7,"hourly_rate":9.7},{"code":"09:9680","name":"Carpets","division":"Finishes","avg_total":6351.82,"avg_hrs":250.5,"hourly_rate":27.84},{"code":"09:9900","name":"Painting","division":"Finishes","avg_total":39885.23,"avg_hrs":3043.6,"hourly_rate":13.34},{"code":"10:10300","name":"Fireplace Mat & Labor","division":"Specialties","avg_total":16316.67,"avg_hrs":null,"hourly_rate":null},{"code":"10:10822","name":"Shower Enclosures","division":"Specialties","avg_total":4879.86,"avg_hrs":null,"hourly_rate":null},{"code":"10:10900","name":"Closets","division":"Specialties","avg_total":5060.93,"avg_hrs":null,"hourly_rate":null},{"code":"11:11200","name":"Water Treatment","division":"Equipment","avg_total":6328.66,"avg_hrs":null,"hourly_rate":null},{"code":"11:11452","name":"Appliances","division":"Equipment","avg_total":30347.67,"avg_hrs":null,"hourly_rate":null},{"code":"13:13170","name":"Spa","division":"Special Construction","avg_total":17520,"avg_hrs":null,"hourly_rate":null},{"code":"13:13180","name":"Pool","division":"Special Construction","avg_total":342218,"avg_hrs":628,"hourly_rate":null},{"code":"13:13602","name":"PV Solar","division":"Special Construction","avg_total":42197.5,"avg_hrs":7.1,"hourly_rate":null},{"code":"13:13800","name":"Safety (FRP)","division":"Special Construction","avg_total":10968.46,"avg_hrs":991,"hourly_rate":11.07},{"code":"13:13900","name":"Fire Sprinklers","division":"Special Construction","avg_total":7455.39,"avg_hrs":3131.1,"hourly_rate":2.81},{"code":"14:14100","name":"Elevators","division":"Conveying","avg_total":80000,"avg_hrs":null,"hourly_rate":null},{"code":"15:15400","name":"Plumbing","division":"Mechanical","avg_total":58628.27,"avg_hrs":2630.8,"hourly_rate":20.69},{"code":"15:15401","name":"Plumbing Fixtures","division":"Mechanical","avg_total":18412.11,"avg_hrs":null,"hourly_rate":null},{"code":"15:15500","name":"HVAC","division":"Mechanical","avg_total":56872.2,"avg_hrs":2863.6,"hourly_rate":19.99},{"code":"15:15515","name":"Hydronic Heating","division":"Mechanical","avg_total":42123,"avg_hrs":null,"hourly_rate":null},{"code":"16:16200","name":"Back Up Power","division":"Electrical","avg_total":25818.5,"avg_hrs":null,"hourly_rate":null},{"code":"16:16400","name":"Electrical","division":"Electrical","avg_total":101941.94,"avg_hrs":3541.2,"hourly_rate":29.86},{"code":"16:16401","name":"Light Fixtures","division":"Electrical","avg_total":14182.82,"avg_hrs":null,"hourly_rate":null},{"code":"16:16700","name":"Low Voltage","division":"Electrical","avg_total":64155.37,"avg_hrs":4985.2,"hourly_rate":12.25}];
+
+const OH_SEED=[{category:"Software",item:"Revit / BIM License",monthly_cost:310,vendor_notes:"Autodesk"},{category:"Software",item:"AutoCAD",monthly_cost:220,vendor_notes:"Autodesk"},{category:"Software",item:"Project Management",monthly_cost:49,vendor_notes:"Asana/Monday"},{category:"Software",item:"Accounting",monthly_cost:85,vendor_notes:"QuickBooks"},{category:"Software",item:"Adobe Creative Suite",monthly_cost:60,vendor_notes:"Adobe"},{category:"Software",item:"Microsoft 365",monthly_cost:25,vendor_notes:"Microsoft"},{category:"Rent/Office",item:"Office Lease",monthly_cost:0,vendor_notes:""},{category:"Rent/Office",item:"Utilities",monthly_cost:0,vendor_notes:""},{category:"Rent/Office",item:"Internet / Phone",monthly_cost:0,vendor_notes:""},{category:"Insurance",item:"General Liability",monthly_cost:0,vendor_notes:""},{category:"Insurance",item:"Professional Liability (E&O)",monthly_cost:0,vendor_notes:""},{category:"Insurance",item:"Workers Comp",monthly_cost:0,vendor_notes:""},{category:"Marketing",item:"Website / SEO",monthly_cost:0,vendor_notes:""},{category:"Marketing",item:"Advertising",monthly_cost:0,vendor_notes:""},{category:"Payroll",item:"Salaries",monthly_cost:0,vendor_notes:""},{category:"Payroll",item:"Payroll Taxes",monthly_cost:0,vendor_notes:"~12% of salary"},{category:"Misc",item:"Bank Fees",monthly_cost:0,vendor_notes:""},{category:"Misc",item:"Legal / Accounting",monthly_cost:0,vendor_notes:""}];
+
+function gd(k){return JSON.parse(localStorage.getItem(k)||'[]')}
+function sd(k,a){localStorage.setItem(k,JSON.stringify(a))}
+function uid(){return Date.now()+Math.random()}
+const $ = id => document.getElementById(id);
+const fc = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2}).format(n||0);
+const fp = n => ((n||0)*100).toFixed(1)+'%';
+const fd = s => s ? new Date(s+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+function ym(d){if(!d)return'';const dt=new Date(d+'T00:00:00');return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')}
+function curMonth(){const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')}
+function monthLabel(ym){const[y,m]=ym.split('-');const names=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return names[+m-1]+' '+y}
+
+// Apply CA fallbacks
+function applyCA(records){
+  return records.map(r=>{
+    let rate=r.hourly_rate, hrs=r.avg_hrs, fb=false;
+    if(!rate){fb=true; rate=r.code==='01:1015'?175:r.code==='01:1045'?125:85}
+    if(!hrs&&r.avg_total&&rate){hrs=Math.round(r.avg_total/rate*10)/10;fb=true}
+    return{...r,id:uid(),hourly_rate:rate,avg_hrs:hrs,ca_fallback:fb}
+  })
+}
+
+// Init seeds
+if(!gd('rw_ip').length) sd('rw_ip', applyCA(CSI_SEED));
+if(!gd('rw_oh').length) sd('rw_oh', OH_SEED.map(r=>({...r,id:uid()})));
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+function nav(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-nav a').forEach(a=>a.classList.remove('active'));
+  $('page-'+page).classList.add('active');
+  $('nav-'+page).classList.add('active');
+  const renders={dashboard:renderDashboard,income:renderIncome,expenses:renderExpenses,assets:renderAssets,liabilities:renderLiabilities,overhead:renderOverhead,'ip-systems':renderIP,'financial-summary':renderFinancial,'new-project':initNewProject};
+  if(renders[page]) renders[page]();
+}
+
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+function toast(msg,type='success'){
+  const t=$('toast'),ti=$('toast-inner');
+  ti.textContent=msg; ti.className='toast-inner toast-'+type;
+  t.style.display='block'; t.style.opacity='1';
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.style.display='none',300)},2800);
+}
+
+// ═══════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════
+let revChart=null;
+function renderDashboard(){
+  $('dash-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const income=gd('rw_income'), expenses=gd('rw_expenses'), assets=gd('rw_assets');
+  const liabilities=gd('rw_liabilities'), overhead=gd('rw_oh'), ip=gd('rw_ip');
+  const cm=curMonth();
+  const monthRev=income.filter(r=>r.payment_status==='Paid'&&ym(r.date)===cm).reduce((s,r)=>s+(+r.invoice_amount||0),0);
+  const monthExp=expenses.filter(r=>ym(r.date)===cm).reduce((s,r)=>s+(+r.amount||0),0);
+  const netIncome=monthRev-monthExp;
+  const totalAssets=assets.reduce((s,r)=>s+(+r.current_value||0),0);
+  const totalLiab=liabilities.reduce((s,r)=>s+(+r.balance||0),0);
+  const allRev=income.filter(r=>r.payment_status==='Paid').reduce((s,r)=>s+(+r.invoice_amount||0),0);
+  const allExp=expenses.reduce((s,r)=>s+(+r.amount||0),0);
+  const equity=(allRev-allExp)*3;
+  const burnRate=overhead.reduce((s,r)=>s+(+r.monthly_cost||0),0);
+  const ipVal=ip.reduce((s,r)=>s+((+r.avg_hrs||0)*(+r.hourly_rate||0)),0);
+
+  function kpiCard(label,val,sub,cls=''){return`<div class="kpi-card ${cls}"><div class="kpi-label">${label}</div><div class="kpi-value ${cls}">${val}</div><div class="kpi-sub">${sub}</div></div>`}
+  $('kpi-row1').innerHTML=kpiCard('Monthly Revenue',fc(monthRev),'Paid invoices this month')+kpiCard('Monthly Expenses',fc(monthExp),'Total costs this month','neg')+kpiCard('Net Income',fc(netIncome),'Revenue minus expenses',netIncome>=0?'pos':'neg');
+  $('kpi-row2').innerHTML=kpiCard('Total Assets',fc(totalAssets),'From Asset Register')+kpiCard('Total Liabilities',fc(totalLiab),'From Liability Tracker','neg')+kpiCard('Est. Equity',fc(equity),'3× EBITDA estimate',equity>=0?'pos':'neg');
+  $('kpi-row3').innerHTML=kpiCard('Monthly Burn Rate',fc(burnRate),'Fixed overhead','neg')+kpiCard('Total IP Value',fc(ipVal),'Replacement cost of all systems')+kpiCard('Annual Overhead',fc(burnRate*12),'Total fixed costs per year','neg');
+
+  // Chart — last 12 months
+  const months=[];const revData=[];const expData=[];
+  for(let i=11;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');months.push(monthLabel(k));revData.push(income.filter(r=>r.payment_status==='Paid'&&ym(r.date)===k).reduce((s,r)=>s+(+r.invoice_amount||0),0));expData.push(expenses.filter(r=>ym(r.date)===k).reduce((s,r)=>s+(+r.amount||0),0));}
+  if(revChart) revChart.destroy();
+  revChart=new Chart($('revChart'),{type:'line',data:{labels:months,datasets:[{label:'Revenue',data:revData,borderColor:'#1A6A24',backgroundColor:'rgba(26,106,36,.08)',tension:.3,fill:true,pointRadius:3},{label:'Expenses',data:expData,borderColor:'#B71C1C',backgroundColor:'rgba(183,28,28,.06)',tension:.3,fill:true,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:11},padding:12}}},scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString(),font:{size:10}},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{font:{size:10}},grid:{display:false}}}}});
+
+  // Outstanding
+  const outstanding=income.filter(r=>r.payment_status==='Outstanding').sort((a,b)=>new Date(b.date)-new Date(a.date));
+  $('outstanding-body').innerHTML=outstanding.length?outstanding.map(r=>`<tr><td>${r.client_name||'—'}</td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.service_type||'—'}</td><td><strong>${fc(r.invoice_amount)}</strong></td><td>${fd(r.date)}</td><td><button class="btn btn-sm btn-primary" onclick="markPaid('${r.id}')">Mark Paid</button></td></tr>`).join(''):
+  '<tr><td colspan="5" class="empty-state"><p>No outstanding invoices</p></td></tr>';
+
+  // Activity
+  const acts=[...income.map(r=>({...r,_type:'Income',_desc:r.client_name,_amt:+r.invoice_amount})),...expenses.map(r=>({...r,_type:'Expense',_desc:r.vendor||r.category,_amt:+r.amount}))].sort((a,b)=>new Date(b.created_at||b.date)-new Date(a.created_at||a.date)).slice(0,8);
+  $('activity-body').innerHTML=acts.length?acts.map(r=>`<tr><td><span class="pill ${r._type==='Income'?'pill-paid':'pill-outstanding'}">${r._type}</span></td><td>${r._desc||'—'}</td><td><strong>${fc(r._amt)}</strong></td><td>${fd(r.date)}</td></tr>`).join(''):'<tr><td colspan="4" class="empty-state"><p>No recent activity</p></td></tr>';
+}
+
+function markPaid(id){
+  const inc=gd('rw_income');const i=inc.findIndex(r=>String(r.id)===String(id));if(i<0)return;
+  inc[i].payment_status='Paid';sd('rw_income',inc);toast('Invoice marked as paid');renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════════
+// INCOME
+// ═══════════════════════════════════════════════════════
+function renderIncome(){
+  const all=gd('rw_income');
+  const months=[...new Set(all.map(r=>ym(r.date)).filter(Boolean))].sort().reverse();
+  const mSel=$('inc-filter-month');const curMSel=mSel.value;
+  mSel.innerHTML='<option value="">All Months</option>'+months.map(m=>`<option value="${m}"${m===curMSel?' selected':''}>${monthLabel(m)}</option>`).join('');
+  const mf=mSel.value, sf=$('inc-filter-status').value, search=$('inc-search').value.toLowerCase();
+  const filtered=all.filter(r=>(!mf||ym(r.date)===mf)&&(!sf||r.payment_status===sf)&&(!search||((r.client_name||'').toLowerCase().includes(search))));
+  const total=filtered.reduce((s,r)=>s+(+r.invoice_amount||0),0);
+  const paid=filtered.filter(r=>r.payment_status==='Paid').reduce((s,r)=>s+(+r.invoice_amount||0),0);
+  $('income-summary').innerHTML=`<div class="summary-item"><label>Total Invoiced</label><span>${fc(total)}</span></div><div class="summary-item"><label>Paid</label><span class="pos">${fc(paid)}</span></div><div class="summary-item"><label>Outstanding</label><span class="neg">${fc(total-paid)}</span></div><div class="summary-item"><label>Records</label><span>${filtered.length}</span></div>`;
+  $('income-body').innerHTML=filtered.length?filtered.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(r=>`<tr><td>${fd(r.date)}</td><td>${r.client_name||'—'}</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.service_type||'—'}</td><td>${r.est_hours?r.est_hours.toFixed(1):'—'}</td><td>${r.hourly_rate?fc(r.hourly_rate):'—'}</td><td><strong>${fc(r.invoice_amount)}</strong></td><td><span class="pill pill-${(r.payment_status||'outstanding').toLowerCase()}">${r.payment_status||'Outstanding'}</span></td><td style="color:var(--txt2);font-size:12px">${r.notes||''}</td><td class="action-btns"><button class="btn btn-sm btn-outline" onclick="openModal('income','${r.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('rw_income','${r.id}',renderIncome)">Del</button></td></tr>`).join(''):'<tr><td colspan="9"><div class="empty-state"><p>No income records yet. Add your first project!</p></div></td></tr>';
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPENSES
+// ═══════════════════════════════════════════════════════
+function renderExpenses(){
+  const all=gd('rw_expenses');
+  const months=[...new Set(all.map(r=>ym(r.date)).filter(Boolean))].sort().reverse();
+  const mSel=$('exp-filter-month');const curMSel=mSel.value;
+  mSel.innerHTML='<option value="">All Months</option>'+months.map(m=>`<option value="${m}"${m===curMSel?' selected':''}>${monthLabel(m)}</option>`).join('');
+  const mf=mSel.value, cf=$('exp-filter-cat').value;
+  const filtered=all.filter(r=>(!mf||ym(r.date)===mf)&&(!cf||r.category===cf));
+  const total=filtered.reduce((s,r)=>s+(+r.amount||0),0);
+  const cm=curMonth();const monthTotal=all.filter(r=>ym(r.date)===cm).reduce((s,r)=>s+(+r.amount||0),0);
+  const ytd=new Date().getFullYear();const ytdTotal=all.filter(r=>r.date&&r.date.startsWith(ytd)).reduce((s,r)=>s+(+r.amount||0),0);
+  $('expense-summary').innerHTML=`<div class="summary-item"><label>Filtered Total</label><span class="neg">${fc(total)}</span></div><div class="summary-item"><label>This Month</label><span class="neg">${fc(monthTotal)}</span></div><div class="summary-item"><label>YTD Total</label><span class="neg">${fc(ytdTotal)}</span></div>`;
+  $('expense-body').innerHTML=filtered.length?filtered.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(r=>`<tr><td>${fd(r.date)}</td><td>${r.category||'—'}</td><td>${r.vendor||'—'}</td><td><strong>${fc(r.amount)}</strong></td><td>${r.payment_method||'—'}</td><td style="color:var(--txt2);font-size:12px">${r.notes||''}</td><td class="action-btns"><button class="btn btn-sm btn-outline" onclick="openModal('expense','${r.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('rw_expenses','${r.id}',renderExpenses)">Del</button></td></tr>`).join(''):'<tr><td colspan="7"><div class="empty-state"><p>No expense records yet.</p></div></td></tr>';
+}
+
+// ═══════════════════════════════════════════════════════
+// ASSETS
+// ═══════════════════════════════════════════════════════
+function renderAssets(){
+  const all=gd('rw_assets');
+  const totalPurch=all.reduce((s,r)=>s+(+r.purchase_cost||0),0);
+  const totalVal=all.reduce((s,r)=>s+(+r.current_value||0),0);
+  const totalDepr=all.reduce((s,r)=>s+((+r.purchase_cost||0)-(+r.current_value||0)),0);
+  $('asset-summary').innerHTML=`<div class="summary-item"><label>Total Purchase Cost</label><span>${fc(totalPurch)}</span></div><div class="summary-item"><label>Total Current Value</label><span class="pos">${fc(totalVal)}</span></div><div class="summary-item"><label>Total Depreciation</label><span class="neg">${fc(totalDepr)}</span></div><div class="summary-item"><label>Assets</label><span>${all.length}</span></div>`;
+  $('asset-body').innerHTML=all.length?all.map(r=>{const d=+r.useful_life_years>0?((+r.purchase_cost||0)-(+r.current_value||0))/(+r.useful_life_years):0;return`<tr><td><strong>${r.asset_name||'—'}</strong></td><td>${r.category||'—'}</td><td style="color:var(--txt2);font-size:12px">${r.description||''}</td><td>${fc(r.purchase_cost)}</td><td>${fc(r.current_value)}</td><td>${fd(r.date_acquired)}</td><td>${r.useful_life_years||'—'} yrs</td><td>${d>0?fc(d):'—'}</td><td class="action-btns"><button class="btn btn-sm btn-outline" onclick="openModal('asset','${r.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('rw_assets','${r.id}',renderAssets)">Del</button></td></tr>`}).join(''):'<tr><td colspan="9"><div class="empty-state"><p>No assets recorded yet.</p></div></td></tr>';
+}
+
+// ═══════════════════════════════════════════════════════
+// LIABILITIES
+// ═══════════════════════════════════════════════════════
+function renderLiabilities(){
+  const all=gd('rw_liabilities');
+  const totalBal=all.reduce((s,r)=>s+(+r.balance||0),0);
+  const totalPmt=all.reduce((s,r)=>s+(+r.monthly_payment||0),0);
+  const totalInt=all.reduce((s,r)=>s+((+r.balance||0)*(+r.interest_rate||0)),0);
+  $('liability-summary').innerHTML=`<div class="summary-item"><label>Total Balance</label><span class="neg">${fc(totalBal)}</span></div><div class="summary-item"><label>Monthly Payment</label><span class="neg">${fc(totalPmt)}</span></div><div class="summary-item"><label>Annual Interest</label><span class="neg">${fc(totalInt)}</span></div>`;
+  $('liability-body').innerHTML=all.length?all.map(r=>`<tr><td><strong>${r.creditor||'—'}</strong></td><td>${r.type||'—'}</td><td>${fc(r.balance)}</td><td>${((+r.interest_rate||0)*100).toFixed(2)}%</td><td>${fc(r.monthly_payment)}</td><td>${fd(r.maturity_date)}</td><td>${fc((+r.balance||0)*(+r.interest_rate||0))}</td><td style="color:var(--txt2);font-size:12px">${r.notes||''}</td><td class="action-btns"><button class="btn btn-sm btn-outline" onclick="openModal('liability','${r.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('rw_liabilities','${r.id}',renderLiabilities)">Del</button></td></tr>`).join(''):'<tr><td colspan="9"><div class="empty-state"><p>No liabilities recorded.</p></div></td></tr>';
+}
+
+// ═══════════════════════════════════════════════════════
+// OVERHEAD
+// ═══════════════════════════════════════════════════════
+function renderOverhead(){
+  const all=gd('rw_oh');
+  const total=all.reduce((s,r)=>s+(+r.monthly_cost||0),0);
+  $('overhead-summary').innerHTML=`<div class="summary-item"><label>Monthly Overhead</label><span class="neg">${fc(total)}</span></div><div class="summary-item"><label>Annual Overhead</label><span class="neg">${fc(total*12)}</span></div>`;
+  const groups=[...new Set(all.map(r=>r.category))];
+  let html='';
+  groups.forEach(g=>{
+    const rows=all.filter(r=>r.category===g);
+    const sub=rows.reduce((s,r)=>s+(+r.monthly_cost||0),0);
+    html+=`<tr><td colspan="5" class="oh-group-header">${g} — ${fc(sub)}/mo</td></tr>`;
+    rows.forEach(r=>{html+=`<tr><td style="padding-left:28px;color:var(--txt2);font-size:12px">${r.category}</td><td>${r.item}</td><td><input class="inline-edit" type="number" value="${r.monthly_cost||0}" onchange="updateOverhead('${r.id}',this.value)" /></td><td>${fc((+r.monthly_cost||0)*12)}</td><td style="color:var(--txt2);font-size:12px">${r.vendor_notes||''}</td></tr>`});
+  });
+  $('overhead-body').innerHTML=html;
+  $('overhead-foot').innerHTML=`<tr style="background:var(--dg);color:#fff"><td colspan="2" style="padding:10px 14px;font-weight:500">TOTAL</td><td style="padding:10px 14px;font-weight:500">${fc(total)}/mo</td><td style="padding:10px 14px;font-weight:500">${fc(total*12)}/yr</td><td></td></tr>`;
+}
+function updateOverhead(id,val){
+  const all=gd('rw_oh');const i=all.findIndex(r=>String(r.id)===String(id));
+  if(i<0)return;all[i].monthly_cost=+val;sd('rw_oh',all);
+  const total=all.reduce((s,r)=>s+(+r.monthly_cost||0),0);
+  $('overhead-summary').innerHTML=`<div class="summary-item"><label>Monthly Overhead</label><span class="neg">${fc(total)}</span></div><div class="summary-item"><label>Annual Overhead</label><span class="neg">${fc(total*12)}</span></div>`;
+  toast('Updated');
+}
+
+// ═══════════════════════════════════════════════════════
+// IP SYSTEMS
+// ═══════════════════════════════════════════════════════
+function renderIP(){
+  const all=gd('rw_ip');
+  const divs=[...new Set(all.map(r=>r.division))].sort();
+  const dSel=$('ip-filter-div');const curD=dSel.value;
+  dSel.innerHTML='<option value="">All Divisions</option>'+divs.map(d=>`<option value="${d}"${d===curD?' selected':''}>${d}</option>`).join('');
+  const df=dSel.value;
+  const filtered=all.filter(r=>!df||r.division===df);
+  const total=filtered.reduce((s,r)=>s+((+r.avg_hrs||0)*(+r.hourly_rate||0)),0);
+  const avg=filtered.length?total/filtered.length:0;
+  $('ip-summary').innerHTML=`<div class="summary-item"><label>Total IP Value</label><span class="pos">${fc(total)}</span></div><div class="summary-item"><label>Systems</label><span>${filtered.length}</span></div><div class="summary-item"><label>Avg Replacement</label><span>${fc(avg)}</span></div>`;
+  $('ip-body').innerHTML=filtered.map(r=>{const rc=(+r.avg_hrs||0)*(+r.hourly_rate||0);return`<tr><td style="font-family:monospace;font-size:12px">${r.code}</td><td>${r.name}</td><td>${r.division}</td><td>${r.avg_hrs?r.avg_hrs.toFixed(1):'—'} ${r.ca_fallback?'<span class="pill pill-ca">CA Avg</span>':''}</td><td>${fc(r.hourly_rate)} ${r.ca_fallback?'<span class="pill pill-ca">CA Avg</span>':''}</td><td><strong>${fc(rc)}</strong></td><td>${r.ca_fallback?'CA Average':'Historical Data'}</td><td><button class="btn btn-sm btn-outline" onclick="editIP('${r.id}')">Edit Rate</button></td></tr>`}).join('');
+}
+function editIP(id){
+  const all=gd('rw_ip');const r=all.find(x=>String(x.id)===String(id));if(!r)return;
+  const hrs=prompt('Estimated Hours (current: '+r.avg_hrs+')',r.avg_hrs);if(hrs===null)return;
+  const rate=prompt('Hourly Rate (current: $'+r.hourly_rate+')',r.hourly_rate);if(rate===null)return;
+  const i=all.indexOf(r);all[i].avg_hrs=+hrs;all[i].hourly_rate=+rate;all[i].ca_fallback=false;
+  sd('rw_ip',all);toast('Updated');renderIP();
+}
+
+// ═══════════════════════════════════════════════════════
+// FINANCIAL SUMMARY
+// ═══════════════════════════════════════════════════════
+function renderFinancial(){
+  const income=gd('rw_income'),expenses=gd('rw_expenses'),overhead=gd('rw_oh');
+  const burn=overhead.reduce((s,r)=>s+(+r.monthly_cost||0),0);
+  const yr=new Date().getFullYear();
+  const months=['01','02','03','04','05','06','07','08','09','10','11','12'];
+  let ytdRev=0,ytdExp=0,ytdNet=0,ytdOut=0;
+  let rows='',totalRev=0,totalExp=0;
+  months.forEach((m,i)=>{
+    const key=yr+'-'+m;const lbl=monthLabel(key);
+    const rev=income.filter(r=>r.payment_status==='Paid'&&ym(r.date)===key).reduce((s,r)=>s+(+r.invoice_amount||0),0);
+    const exp=expenses.filter(r=>ym(r.date)===key).reduce((s,r)=>s+(+r.amount||0),0);
+    const out=income.filter(r=>r.payment_status==='Outstanding'&&ym(r.date)===key).reduce((s,r)=>s+(+r.invoice_amount||0),0);
+    const net=rev-exp; const mg=rev>0?net/rev:0;
+    ytdRev+=rev;ytdExp+=exp;ytdNet+=net;ytdOut+=out;totalRev+=rev;totalExp+=exp;
+    const cov=burn>0?rev/burn:0;
+    rows+=`<tr><td style="font-weight:500">${lbl}</td><td>${rev>0?fc(rev):'—'}</td><td>${exp>0?fc(exp):'—'}</td><td class="${net>0?'fin-pos':net<0?'fin-neg':''}">${rev||exp?fc(net):'—'}</td><td>${rev>0?fp(mg):'—'}</td><td>${out>0?'<span class="fin-neg">'+fc(out)+'</span>':'—'}</td><td>${fc(ytdRev)}</td><td class="${ytdNet>0?'fin-pos':ytdNet<0?'fin-neg':''}">${fc(ytdNet)}</td><td>${burn>0&&rev>0?(cov.toFixed(1)+'x'):'—'}</td></tr>`;
+  });
+  const ytdMg=ytdRev>0?ytdNet/ytdRev:0;
+  $('fin-summary').innerHTML=`<div class="summary-item"><label>YTD Revenue</label><span class="pos">${fc(ytdRev)}</span></div><div class="summary-item"><label>YTD Expenses</label><span class="neg">${fc(ytdExp)}</span></div><div class="summary-item"><label>YTD Net Income</label><span class="${ytdNet>=0?'pos':'neg'}">${fc(ytdNet)}</span></div><div class="summary-item"><label>YTD Margin</label><span>${fp(ytdMg)}</span></div><div class="summary-item"><label>Outstanding</label><span class="neg">${fc(ytdOut)}</span></div>`;
+  $('fin-body').innerHTML=rows;
+  $('fin-foot').innerHTML=`<tr style="background:var(--dg);color:#fff"><td style="padding:10px 14px;font-weight:500">TOTALS</td><td style="padding:10px 14px">${fc(totalRev)}</td><td style="padding:10px 14px">${fc(totalExp)}</td><td style="padding:10px 14px">${fc(totalRev-totalExp)}</td><td style="padding:10px 14px">${totalRev>0?fp((totalRev-totalExp)/totalRev):'—'}</td><td colspan="4"></td></tr>`;
+}
+function exportCSV(){
+  const income=gd('rw_income'),expenses=gd('rw_expenses'),overhead=gd('rw_oh');
+  const burn=overhead.reduce((s,r)=>s+(+r.monthly_cost||0),0);
+  const yr=new Date().getFullYear();
+  const months=['01','02','03','04','05','06','07','08','09','10','11','12'];
+  let csv='Month,Revenue,Expenses,Net Income,Margin %,Outstanding,Cumulative Revenue,YTD Net,Burn Coverage\n';
+  let ytdRev=0,ytdNet=0;
+  months.forEach(m=>{
+    const key=yr+'-'+m;const lbl=monthLabel(key);
+    const rev=income.filter(r=>r.payment_status==='Paid'&&ym(r.date)===key).reduce((s,r)=>s+(+r.invoice_amount||0),0);
+    const exp=expenses.filter(r=>ym(r.date)===key).reduce((s,r)=>s+(+r.amount||0),0);
+    const out=income.filter(r=>r.payment_status==='Outstanding'&&ym(r.date)===key).reduce((s,r)=>s+(+r.invoice_amount||0),0);
+    const net=rev-exp;ytdRev+=rev;ytdNet+=net;
+    csv+=`${lbl},${rev.toFixed(2)},${exp.toFixed(2)},${net.toFixed(2)},${rev>0?((net/rev)*100).toFixed(1)+'%':''},${out.toFixed(2)},${ytdRev.toFixed(2)},${ytdNet.toFixed(2)},${burn>0&&rev>0?(rev/burn).toFixed(1)+'x':''}\n`;
+  });
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='romaine-financial-'+yr+'.csv';a.click();
+}
+
+// ═══════════════════════════════════════════════════════
+// MODAL SYSTEM
+// ═══════════════════════════════════════════════════════
+let _modalType='',_modalId=null,_modalCallback=null;
+function openModal(type,id){
+  _modalType=type;_modalId=id||null;
+  const overlay=$('modal-overlay'),title=$('modal-title'),body=$('modal-body'),saveBtn=$('modal-save-btn');
+  const ip=gd('rw_ip');
+  const svcOptions=ip.map(r=>`<option value="${r.code}|${r.name}|${r.avg_hrs}|${r.hourly_rate}">${r.division} — ${r.name}</option>`).join('');
+  let rec={};
+  if(id){
+    const key={income:'rw_income',expense:'rw_expenses',asset:'rw_assets',liability:'rw_liabilities'}[type];
+    if(key) rec=gd(key).find(r=>String(r.id)===String(id))||{};
+  }
+  const v=k=>rec[k]||'';
+  const selected=k=>v(k)?`selected value="${v(k)}"`:'' ;
+  if(type==='income'){
+    title.textContent=id?'Edit Income':'Add Income';
+    body.innerHTML=`<div class="form-grid"><div class="form-row"><label>Date</label><input id="m-date" type="date" value="${v('date')}" /></div><div class="form-row"><label>Client Name</label><input id="m-client" value="${v('client_name')}" /></div></div><div class="form-row"><label>Service Type</label><select id="m-svc" onchange="modalServiceSelect()">${svcOptions}</select></div><div id="m-ca-banner" class="ca-banner" style="display:none">Rate/hours based on California state average.</div><div class="form-grid"><div class="form-row"><label>Est. Hours</label><input id="m-hrs" type="number" step="0.5" value="${v('est_hours')}" oninput="modalCalc()" /></div><div class="form-row"><label>Hourly Rate ($)</label><input id="m-rate" type="number" step="0.01" value="${v('hourly_rate')}" oninput="modalCalc()" /></div></div><div class="form-row"><label>Invoice Amount</label><input id="m-inv" type="number" step="0.01" value="${v('invoice_amount')}" /></div><div class="form-row"><label>Payment Status</label><select id="m-status"><option${v('payment_status')==='Outstanding'?' selected':''}>Outstanding</option><option${v('payment_status')==='Paid'?' selected':''}>Paid</option><option${v('payment_status')==='Partial'?' selected':''}>Partial</option></select></div><div class="form-row"><label>Notes</label><input id="m-notes" value="${v('notes')}" /></div>`;
+    saveBtn.onclick=()=>saveIncome();
+  } else if(type==='expense'){
+    title.textContent=id?'Edit Expense':'Add Expense';
+    body.innerHTML=`<div class="form-grid"><div class="form-row"><label>Date</label><input id="m-date" type="date" value="${v('date')}" /></div><div class="form-row"><label>Vendor</label><input id="m-vendor" value="${v('vendor')}" /></div></div><div class="form-row"><label>Category</label><select id="m-cat"><option${v('category')==='Software'?' selected':''}>Software</option><option${v('category')==='Rent/Office'?' selected':''}>Rent/Office</option><option${v('category')==='Insurance'?' selected':''}>Insurance</option><option${v('category')==='Marketing'?' selected':''}>Marketing</option><option${v('category')==='Payroll'?' selected':''}>Payroll</option><option${v('category')==='Materials'?' selected':''}>Materials</option><option${v('category')==='Subcontractor'?' selected':''}>Subcontractor</option><option${v('category')==='Travel'?' selected':''}>Travel</option><option${v('category')==='Utilities'?' selected':''}>Utilities</option><option${v('category')==='Misc'?' selected':''}>Misc</option></select></div><div class="form-row"><label>Amount ($)</label><input id="m-amount" type="number" step="0.01" value="${v('amount')}" /></div><div class="form-row"><label>Payment Method</label><select id="m-method"><option>Credit Card</option><option>Check</option><option>ACH</option><option>Cash</option><option>Wire</option></select></div><div class="form-row"><label>Notes</label><input id="m-notes" value="${v('notes')}" /></div>`;
+    saveBtn.onclick=()=>saveExpense();
+  } else if(type==='asset'){
+    title.textContent=id?'Edit Asset':'Add Asset';
+    body.innerHTML=`<div class="form-row"><label>Asset Name</label><input id="m-name" value="${v('asset_name')}" /></div><div class="form-grid"><div class="form-row"><label>Category</label><input id="m-cat" value="${v('category')}" placeholder="e.g. Equipment" /></div><div class="form-row"><label>Date Acquired</label><input id="m-date" type="date" value="${v('date_acquired')}" /></div></div><div class="form-row"><label>Description</label><input id="m-desc" value="${v('description')}" /></div><div class="form-grid"><div class="form-row"><label>Purchase Cost ($)</label><input id="m-purch" type="number" value="${v('purchase_cost')}" /></div><div class="form-row"><label>Current Value ($)</label><input id="m-val" type="number" value="${v('current_value')}" /></div></div><div class="form-row"><label>Useful Life (years)</label><input id="m-life" type="number" value="${v('useful_life_years')}" /></div>`;
+    saveBtn.onclick=()=>saveAsset();
+  } else if(type==='liability'){
+    title.textContent=id?'Edit Liability':'Add Liability';
+    body.innerHTML=`<div class="form-row"><label>Creditor</label><input id="m-creditor" value="${v('creditor')}" /></div><div class="form-grid"><div class="form-row"><label>Type</label><input id="m-type" value="${v('type')}" placeholder="e.g. Loan, Line of Credit" /></div><div class="form-row"><label>Balance ($)</label><input id="m-bal" type="number" value="${v('balance')}" /></div></div><div class="form-grid"><div class="form-row"><label>Interest Rate (e.g. 0.065)</label><input id="m-rate" type="number" step="0.001" value="${v('interest_rate')}" /></div><div class="form-row"><label>Monthly Payment ($)</label><input id="m-pmt" type="number" value="${v('monthly_payment')}" /></div></div><div class="form-row"><label>Maturity Date</label><input id="m-mat" type="date" value="${v('maturity_date')}" /></div><div class="form-row"><label>Notes</label><input id="m-notes" value="${v('notes')}" /></div>`;
+    saveBtn.onclick=()=>saveLiability();
+  }
+  overlay.classList.add('open');
+  if(type==='income') setTimeout(()=>modalServiceSelect(),100);
+}
+function modalServiceSelect(){
+  const sel=$('m-svc');if(!sel)return;
+  const parts=sel.value.split('|');if(parts.length<4)return;
+  const [code,name,hrs,rate]=parts;
+  const ip=gd('rw_ip').find(r=>r.code===code);
+  if(ip){const m=$('m-ca-banner');if(m)m.style.display=ip.ca_fallback?'block':'none';}
+  if($('m-hrs'))$('m-hrs').value=hrs!=='null'?+hrs:'';
+  if($('m-rate'))$('m-rate').value=rate!=='null'?+rate:'';
+  modalCalc();
+}
+function modalCalc(){const h=+($('m-hrs')||{}).value,r=+($('m-rate')||{}).value;if(h&&r&&$('m-inv'))$('m-inv').value=(h*r).toFixed(2);}
+function closeModal(){$('modal-overlay').classList.remove('open')}
+function closeModalOnOverlay(e){if(e.target===$('modal-overlay'))closeModal()}
+function saveIncome(){
+  const d={id:_modalId||uid(),date:$('m-date').value,client_name:$('m-client').value,service_type:$('m-svc').value.split('|')[1]||'',csi_code:$('m-svc').value.split('|')[0]||'',est_hours:+$('m-hrs').value||null,hourly_rate:+$('m-rate').value||null,invoice_amount:+$('m-inv').value||0,payment_status:$('m-status').value,notes:$('m-notes').value,created_at:new Date().toISOString()};
+  const all=gd('rw_income');if(_modalId){const i=all.findIndex(r=>String(r.id)===String(_modalId));if(i>=0)all[i]=d;else all.push(d)}else all.push(d);
+  sd('rw_income',all);closeModal();toast('Income saved');renderIncome();
+}
+function saveExpense(){
+  const d={id:_modalId||uid(),date:$('m-date').value,category:$('m-cat').value,vendor:$('m-vendor').value,amount:+$('m-amount').value||0,payment_method:$('m-method').value,notes:$('m-notes').value,created_at:new Date().toISOString()};
+  const all=gd('rw_expenses');if(_modalId){const i=all.findIndex(r=>String(r.id)===String(_modalId));if(i>=0)all[i]=d;else all.push(d)}else all.push(d);
+  sd('rw_expenses',all);closeModal();toast('Expense saved');renderExpenses();
+}
+function saveAsset(){
+  const d={id:_modalId||uid(),asset_name:$('m-name').value,category:$('m-cat').value,description:$('m-desc').value,purchase_cost:+$('m-purch').value||0,current_value:+$('m-val').value||0,date_acquired:$('m-date').value,useful_life_years:+$('m-life').value||0};
+  const all=gd('rw_assets');if(_modalId){const i=all.findIndex(r=>String(r.id)===String(_modalId));if(i>=0)all[i]=d;else all.push(d)}else all.push(d);
+  sd('rw_assets',all);closeModal();toast('Asset saved');renderAssets();
+}
+function saveLiability(){
+  const d={id:_modalId||uid(),creditor:$('m-creditor').value,type:$('m-type').value,balance:+$('m-bal').value||0,interest_rate:+$('m-rate').value||0,monthly_payment:+$('m-pmt').value||0,maturity_date:$('m-mat').value,notes:$('m-notes').value};
+  const all=gd('rw_liabilities');if(_modalId){const i=all.findIndex(r=>String(r.id)===String(_modalId));if(i>=0)all[i]=d;else all.push(d)}else all.push(d);
+  sd('rw_liabilities',all);closeModal();toast('Liability saved');renderLiabilities();
+}
+function deleteRecord(key,id,cb){
+  if(!confirm('Delete this record?'))return;
+  const all=gd(key).filter(r=>String(r.id)!==String(id));sd(key,all);toast('Deleted','error');if(cb)cb();
+}
+
+// ═══════════════════════════════════════════════════════
+// NEW PROJECT WIZARD
+// ═══════════════════════════════════════════════════════
+let npStep=1,npData={};
+function initNewProject(){
+  npStep=1;npData={};
+  $('np-date').value=new Date().toISOString().split('T')[0];
+  $('np-success').style.display='none';
+  document.querySelectorAll('.wizard-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.wstep').forEach(s=>{s.classList.remove('active','done')});
+  $('wp1').classList.add('active');$('ws1').classList.add('active');
+  populateNpServices();
+}
+function populateNpServices(filter=''){
+  const ip=gd('rw_ip');const sel=$('np-service');
+  const divs=[...new Set(ip.map(r=>r.division))];
+  sel.innerHTML=divs.map(d=>{const rows=ip.filter(r=>r.division===d&&(!filter||r.name.toLowerCase().includes(filter.toLowerCase())));if(!rows.length)return'';return`<optgroup label="${d}">${rows.map(r=>`<option value="${r.code}|${r.avg_hrs}|${r.hourly_rate}|${r.avg_total}|${r.ca_fallback?'1':'0'}">${r.name}</option>`).join('')}</optgroup>`}).join('');
+}
+function filterNpServices(){populateNpServices($('np-search').value);}
+function onServiceSelect(){
+  const sel=$('np-service');if(!sel.value)return;
+  const [code,hrs,rate,hist,ca]=sel.value.split('|');
+  $('np-hours').value=hrs!=='null'?+hrs:'';
+  $('np-rate').value=rate!=='null'?+rate:'';
+  $('np-ca-banner').style.display=ca==='1'?'block':'none';
+  calcInvoice();
+}
+function calcInvoice(){
+  const h=+$('np-hours').value,r=+$('np-rate').value;
+  if(h&&r){
+    const sel=$('np-service');const parts=sel.value.split('|');const hist=parts[3];
+    $('np-calc').style.display='block';
+    $('np-c-hrs').textContent=h.toLocaleString()+' hrs';
+    $('np-c-rate').textContent=fc(r)+'/hr';
+    $('np-c-hist').textContent=hist&&hist!=='null'?fc(+hist):'—';
+    $('np-c-inv').textContent=fc(h*r);
+  } else $('np-calc').style.display='none';
+}
+function wpNext(step){
+  if(step===1){if(!$('np-client').value.trim()){alert('Client name is required');return;}npData.client=$('np-client').value;npData.date=$('np-date').value;npData.type=$('np-type').value;npData.notes=$('np-notes').value;}
+  if(step===2){if(!$('np-service').value){alert('Please select a service');return;}const parts=$('np-service').value.split('|');const options=$('np-service').selectedOptions[0];npData.csi_code=parts[0];npData.service=options?options.text:parts[0];npData.hours=+$('np-hours').value||null;npData.rate=+$('np-rate').value||null;npData.invoice=npData.hours&&npData.rate?npData.hours*npData.rate:0;}
+  if(step===3){buildReview();}
+  $('wp'+step).classList.remove('active');$('ws'+step).classList.remove('active');$('ws'+step).classList.add('done');
+  $('wp'+(step+1)).classList.add('active');$('ws'+(step+1)).classList.add('active');
+  npStep=step+1;
+}
+function wpBack(step){
+  $('wp'+step).classList.remove('active');$('ws'+step).classList.remove('active');
+  $('wp'+(step-1)).classList.add('active');$('ws'+(step-1)).classList.remove('done');$('ws'+(step-1)).classList.add('active');
+  npStep=step-1;
+}
+function buildReview(){
+  $('np-review').innerHTML=`<div class="review-row"><span class="review-label">Client</span><span class="review-value">${npData.client}</span></div><div class="review-row"><span class="review-label">Date</span><span class="review-value">${fd(npData.date)}</span></div><div class="review-row"><span class="review-label">Project Type</span><span class="review-value">${npData.type}</span></div><div class="review-row"><span class="review-label">Service</span><span class="review-value">${npData.service}</span></div><div class="review-row"><span class="review-label">CSI Code</span><span class="review-value" style="font-family:monospace">${npData.csi_code}</span></div><div class="review-row"><span class="review-label">Estimated Hours</span><span class="review-value">${npData.hours?npData.hours+' hrs':'—'}</span></div><div class="review-row"><span class="review-label">Hourly Rate</span><span class="review-value">${npData.rate?fc(npData.rate)+'/hr':'—'}</span></div><div class="review-row"><span class="review-label">Invoice Amount</span><span class="review-value" style="font-size:18px;color:var(--dg)">${fc(npData.invoice)}</span></div>${npData.notes?`<div class="review-row"><span class="review-label">Notes</span><span class="review-value">${npData.notes}</span></div>`:''}</div>`;
+}
+function saveNewProject(){
+  const d={id:uid(),date:npData.date,client_name:npData.client,service_type:npData.service,csi_code:npData.csi_code,est_hours:npData.hours,hourly_rate:npData.rate,invoice_amount:npData.invoice,payment_status:$('np-status').value,notes:npData.notes,created_at:new Date().toISOString()};
+  const all=gd('rw_income');all.push(d);sd('rw_income',all);
+  $('np-success').style.display='block';
+}
+function resetNewProject(){$('np-success').style.display='none';initNewProject();}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+renderDashboard();
+$('dash-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+</script>
+</body>
+</html>
