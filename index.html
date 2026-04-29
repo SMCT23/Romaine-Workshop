@@ -6,291 +6,398 @@
 <title>Romaine Workshop</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0}
-  :root{
-    --dg:#1A6A24;--mg:#2E7D2E;--lg:#D6EAD6;--pg:#EBF5EB;
-    --red:#B71C1C;--lred:#FFF3F3;--gold:#C8A84B;--yellow:#FFFDE7;
-    --txt:#1a1a1a;--txt2:#555;--border:#ddd;--bg:#f8faf8;--surface:#fff;
-    --sidebar:220px;
-  }
-  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);display:flex;min-height:100vh;font-size:14px}
-  
-  /* SIDEBAR */
-  #sidebar{width:var(--sidebar);background:var(--dg);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100;overflow-y:auto}
-  .sb-logo{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,.15)}
-  .sb-logo-title{font-family:'DM Serif Display',serif;color:#fff;font-size:16px;line-height:1.2;letter-spacing:.3px}
-  .sb-logo-sub{color:rgba(255,255,255,.6);font-size:11px;margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
-  .sb-nav{padding:12px 0;flex:1}
-  .sb-nav a{display:flex;align-items:center;gap:10px;padding:10px 16px;color:rgba(255,255,255,.75);text-decoration:none;font-size:13px;transition:all .15s;border-left:3px solid transparent;cursor:pointer}
-  .sb-nav a:hover{background:rgba(255,255,255,.1);color:#fff}
-  .sb-nav a.active{background:rgba(255,255,255,.15);color:#fff;border-left-color:#fff;font-weight:500}
-  .sb-nav .nav-icon{font-size:15px;width:20px;text-align:center}
-  .sb-section{padding:8px 16px 4px;color:rgba(255,255,255,.4);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-top:4px}
-  
-  /* MAIN */
-  #main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column}
-  .page{display:none;flex-direction:column;min-height:100vh}
-  .page.active{display:flex}
-  .page-header{background:var(--dg);color:#fff;padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-  .page-header h1{font-family:'DM Serif Display',serif;font-size:22px;font-weight:400}
-  .page-content{padding:24px 28px;flex:1}
-  
-  /* KPI CARDS */
-  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
-  .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;position:relative}
-  .kpi-card.positive{border-left:3px solid var(--mg)}
-  .kpi-card.negative{border-left:3px solid var(--red)}
-  .kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--txt2);margin-bottom:6px}
-  .kpi-value{font-size:26px;font-weight:600;color:var(--txt);line-height:1}
-  .kpi-value.pos{color:var(--mg)}
-  .kpi-value.neg{color:var(--red)}
-  .kpi-sub{font-size:11px;color:var(--txt2);margin-top:5px}
-  
-  /* SUMMARY BAR */
-  .summary-bar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 20px;display:flex;gap:32px;margin-bottom:20px;flex-wrap:wrap}
-  .summary-item{display:flex;flex-direction:column;gap:3px}
-  .summary-item label{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt2)}
-  .summary-item span{font-size:18px;font-weight:600;color:var(--txt)}
-  .summary-item span.pos{color:var(--mg)}
-  .summary-item span.neg{color:var(--red)}
-  
-  /* TABLES */
-  .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
-  .table-header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
-  .table-header h3{font-size:14px;font-weight:500}
-  table{width:100%;border-collapse:collapse}
-  thead tr{background:var(--dg);color:#fff}
-  thead th{padding:10px 14px;text-align:left;font-size:12px;font-weight:500;letter-spacing:.3px;white-space:nowrap}
-  tbody tr:nth-child(even){background:var(--pg)}
-  tbody tr:nth-child(odd){background:var(--surface)}
-  tbody tr:hover{background:var(--lg)}
-  tbody td{padding:9px 14px;font-size:13px;border-bottom:1px solid rgba(0,0,0,.04)}
-  
-  /* PILLS / BADGES */
-  .pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;letter-spacing:.3px}
-  .pill-paid{background:#e8f5e9;color:#1b5e20}
-  .pill-outstanding{background:#ffebee;color:#b71c1c}
-  .pill-partial{background:#fff8e1;color:#f57f17}
-  .pill-ca{background:var(--gold);color:#fff;font-size:10px;padding:2px 6px}
-  
-  /* BUTTONS */
-  .btn{padding:8px 16px;border-radius:6px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;transition:all .15s}
-  .btn-primary{background:var(--dg);color:#fff}.btn-primary:hover{background:var(--mg)}
-  .btn-danger{background:var(--red);color:#fff}.btn-danger:hover{opacity:.85}
-  .btn-sm{padding:5px 11px;font-size:12px}
-  .btn-outline{background:transparent;border:1px solid var(--mg);color:var(--mg)}.btn-outline:hover{background:var(--pg)}
-  
-  /* MODAL */
-  #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
-  #modal-overlay.open{display:flex}
-  .modal{background:#fff;border-radius:12px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto}
-  .modal-header{background:var(--dg);color:#fff;padding:16px 22px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center}
-  .modal-header h3{font-size:16px;font-weight:500}
-  .modal-close{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1}
-  .modal-body{padding:22px}
-  .form-row{margin-bottom:14px}
-  .form-row label{display:block;font-size:12px;font-weight:500;color:var(--txt2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
-  .form-row input,.form-row select,.form-row textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--txt);background:#fff}
-  .form-row input:focus,.form-row select:focus{outline:none;border-color:var(--mg);box-shadow:0 0 0 2px rgba(46,125,46,.15)}
-  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .modal-footer{padding:0 22px 22px;display:flex;gap:10px;justify-content:flex-end}
-  
-  /* TOAST */
-  #toast{position:fixed;bottom:24px;right:24px;z-index:999;display:none}
-  .toast-inner{padding:12px 20px;border-radius:8px;color:#fff;font-size:13px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,.2)}
-  .toast-success{background:var(--dg)}
-  .toast-error{background:var(--red)}
-  
-  /* FILTERS */
-  .filter-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
-  .filter-bar select,.filter-bar input{padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;background:#fff}
-  
-  /* CHART AREA */
-  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px}
-  .chart-title{font-size:14px;font-weight:500;margin-bottom:16px;color:var(--txt)}
-  
-  /* WIZARD */
-  .wizard-steps{display:flex;gap:0;margin-bottom:28px}
-  .wstep{flex:1;padding:12px;text-align:center;border-bottom:3px solid var(--border);font-size:12px;color:var(--txt2);font-weight:500}
-  .wstep.active{border-bottom-color:var(--dg);color:var(--dg)}
-  .wstep.done{border-bottom-color:var(--mg);color:var(--mg)}
-  .wizard-panel{display:none}.wizard-panel.active{display:block}
-  
-  /* CA BANNER */
-  .ca-banner{background:var(--yellow);border:1px solid var(--gold);border-radius:6px;padding:10px 14px;font-size:12px;color:#666;margin:10px 0}
-  
-  /* CALC CARD */
-  .calc-card{background:var(--pg);border:1px solid var(--lg);border-radius:8px;padding:16px;margin-top:12px}
-  .calc-card .calc-line{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px}
-  .calc-card .calc-total{border-top:1px solid var(--lg);padding-top:10px;margin-top:6px;font-weight:600;font-size:15px;display:flex;justify-content:space-between}
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --dg:#1A6A24;--mg:#2E7D2E;--lg:#D6EAD6;--pg:#EBF5EB;
+  --red:#B71C1C;--lred:#FFF3F3;--gold:#C8A84B;--yellow:#FFFDE7;
+  --txt:#1a1a1a;--txt2:#666;--border:#e0e0e0;--bg:#f4f6f4;--surface:#fff;
+  --sidebar:220px;--sidebar-collapsed:52px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);display:flex;min-height:100vh;font-size:14px}
 
-  /* GRID 2COL */
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
-  
-  /* SECTION TITLE */
-  .section-title{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--txt2);margin-bottom:12px;margin-top:20px;font-weight:500}
+/* SIDEBAR */
+#sidebar{width:var(--sidebar);background:var(--dg);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100;overflow-y:auto;overflow-x:hidden;transition:width .25s ease}
+#sidebar.collapsed{width:var(--sidebar-collapsed)}
+.sb-logo{padding:16px 14px 14px;border-bottom:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:space-between;min-height:64px}
+.sb-logo-text{transition:opacity .2s}
+#sidebar.collapsed .sb-logo-text{opacity:0;width:0;overflow:hidden;pointer-events:none}
+.sb-logo-title{font-family:'DM Serif Display',serif;color:#fff;font-size:15px;line-height:1.2;white-space:nowrap}
+.sb-logo-sub{color:rgba(255,255,255,.55);font-size:10px;margin-top:2px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.sb-toggle{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.8);font-size:18px;padding:2px;line-height:1;flex-shrink:0;transition:transform .25s}
+#sidebar.collapsed .sb-toggle{transform:rotate(180deg)}
+.sb-nav{padding:10px 0;flex:1}
+.sb-nav a{display:flex;align-items:center;gap:9px;padding:9px 14px;color:rgba(255,255,255,.72);text-decoration:none;font-size:12.5px;transition:all .15s;border-left:3px solid transparent;cursor:pointer;white-space:nowrap}
+.sb-nav a:hover{background:rgba(255,255,255,.1);color:#fff}
+.sb-nav a.active{background:rgba(255,255,255,.15);color:#fff;border-left-color:#fff;font-weight:500}
+.nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.nav-label{transition:opacity .2s}
+#sidebar.collapsed .nav-label{opacity:0;width:0;overflow:hidden}
+#sidebar.collapsed .sb-nav a{justify-content:center;padding:9px 0}
+.sb-section{padding:6px 14px 3px;color:rgba(255,255,255,.38);font-size:9.5px;text-transform:uppercase;letter-spacing:1px;margin-top:2px;transition:opacity .2s}
+#sidebar.collapsed .sb-section{opacity:0}
+#main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;transition:margin-left .25s}
+#main.collapsed{margin-left:var(--sidebar-collapsed)}
 
-  /* OVERHEAD GROUP */
-  .oh-group-header{background:var(--mg);color:#fff;padding:8px 14px;font-size:12px;font-weight:500;letter-spacing:.4px}
-  
-  /* EMPTY STATE */
-  .empty-state{text-align:center;padding:48px 24px;color:var(--txt2)}
-  .empty-state p{margin-top:8px;font-size:13px}
+/* PAGES */
+.page{display:none;flex-direction:column;min-height:100vh}.page.active{display:flex}
+.page-header{background:var(--dg);color:#fff;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.page-header h1{font-family:'DM Serif Display',serif;font-size:20px;font-weight:400}
+.page-content{padding:20px 24px;flex:1}
 
-  .action-btns{display:flex;gap:6px}
-  .highlight-row{background:var(--yellow)!important}
-  
-  /* FINANCIAL TABLE */
-  .fin-pos{color:var(--mg);font-weight:500}
-  .fin-neg{color:var(--red);font-weight:500}
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;border-left:3px solid var(--mg)}
+.kpi-card.red{border-left-color:var(--red)}
+.kpi-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--txt2);margin-bottom:5px}
+.kpi-value{font-size:24px;font-weight:600;color:var(--txt);line-height:1}
+.kpi-value.pos{color:var(--mg)}.kpi-value.neg{color:var(--red)}
+.kpi-sub{font-size:11px;color:var(--txt2);margin-top:4px}
 
-  #new-project-content .review-card{background:var(--pg);border-radius:8px;padding:18px 20px}
-  #new-project-content .review-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--lg);font-size:13px}
-  #new-project-content .review-row:last-child{border:none}
-  #new-project-content .review-label{color:var(--txt2)}
-  #new-project-content .review-value{font-weight:500}
-  
-  .inline-edit{background:transparent;border:none;border-bottom:1px dashed var(--border);font-family:'DM Sans',sans-serif;font-size:13px;width:90px;text-align:right;padding:2px 4px}
-  .inline-edit:focus{outline:none;border-bottom-color:var(--mg)}
+/* SUMMARY BAR */
+.summary-bar{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 18px;display:flex;gap:28px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.summary-item label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt2);margin-bottom:2px}
+.summary-item span{font-size:16px;font-weight:600}
+.summary-item span.pos{color:var(--mg)}.summary-item span.neg{color:var(--red)}
+
+/* TABLES */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.table-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.table-header h3{font-size:13px;font-weight:500}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--dg);color:#fff}
+thead th{padding:9px 12px;text-align:left;font-size:11.5px;font-weight:500;white-space:nowrap}
+tbody tr:nth-child(even){background:var(--pg)}
+tbody tr:nth-child(odd){background:#fff}
+tbody tr:hover{background:var(--lg)}
+tbody td{padding:8px 12px;font-size:12.5px;border-bottom:1px solid rgba(0,0,0,.04)}
+tfoot tr{background:var(--dg);color:#fff}
+tfoot td{padding:9px 12px;font-size:12px;font-weight:500}
+
+/* PILLS */
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.pill-paid{background:#e8f5e9;color:#1b5e20}
+.pill-outstanding{background:#ffebee;color:#b71c1c}
+.pill-partial{background:#fff8e1;color:#f57f17}
+.pill-ca{background:var(--gold);color:#fff;font-size:10px;padding:2px 6px}
+.pill-low{background:#e3f2fd;color:#0d47a1}
+.pill-mid{background:#f3e5f5;color:#4a148c}
+.pill-high{background:#fce4ec;color:#880e4f}
+
+/* BUTTONS */
+.btn{padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:500;transition:all .15s}
+.btn-primary{background:var(--dg);color:#fff}.btn-primary:hover{background:var(--mg)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-sm{padding:4px 10px;font-size:11.5px}
+.btn-outline{background:transparent;border:1px solid var(--mg);color:var(--mg)}.btn-outline:hover{background:var(--pg)}
+.btn-ghost{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;padding:5px 12px;font-size:12px;border-radius:5px;cursor:pointer}
+
+/* MODAL */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
+#modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:10px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{background:var(--dg);color:#fff;padding:14px 20px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:center}
+.modal-header h3{font-size:15px;font-weight:500}
+.modal-close{background:none;border:none;color:#fff;font-size:20px;cursor:pointer}
+.modal-body{padding:20px}
+.form-row{margin-bottom:12px}
+.form-row label{display:block;font-size:11px;font-weight:500;color:var(--txt2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:5px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--txt)}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{outline:none;border-color:var(--mg);box-shadow:0 0 0 2px rgba(46,125,46,.12)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-footer{padding:0 20px 20px;display:flex;gap:8px;justify-content:flex-end}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;right:20px;z-index:999;display:none}
+.toast-inner{padding:11px 18px;border-radius:7px;color:#fff;font-size:13px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.toast-success{background:var(--dg)}.toast-error{background:var(--red)}
+
+/* FILTER BAR */
+.filter-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.filter-bar select,.filter-bar input{padding:7px 11px;border:1px solid var(--border);border-radius:5px;font-family:'DM Sans',sans-serif;font-size:12.5px;background:#fff}
+
+/* CHART */
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px}
+.chart-title{font-size:13px;font-weight:500;margin-bottom:14px;color:var(--txt)}
+
+/* LAYOUT HELPERS */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.mt{margin-top:16px}
+.empty-state{text-align:center;padding:40px 20px;color:var(--txt2);font-size:13px}
+
+/* WIZARD */
+.wizard-steps{display:flex;margin-bottom:24px;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
+.wstep{flex:1;padding:10px;text-align:center;font-size:12px;color:var(--txt2);font-weight:500;background:#fff;border-right:1px solid var(--border)}
+.wstep:last-child{border-right:none}
+.wstep.active{background:var(--dg);color:#fff}
+.wstep.done{background:var(--mg);color:#fff}
+.wizard-panel{display:none}.wizard-panel.active{display:block}
+.ca-banner{background:var(--yellow);border:1px solid var(--gold);border-radius:5px;padding:9px 12px;font-size:12px;color:#666;margin:8px 0}
+.calc-card{background:var(--pg);border:1px solid var(--lg);border-radius:7px;padding:14px;margin-top:10px}
+.calc-line{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px}
+.calc-total{border-top:1px solid var(--lg);padding-top:8px;margin-top:5px;font-weight:600;font-size:14px;display:flex;justify-content:space-between}
+.review-card{background:var(--pg);border-radius:7px;padding:16px 18px}
+.review-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--lg);font-size:12.5px}
+.review-row:last-child{border:none}
+.review-label{color:var(--txt2)}.review-value{font-weight:500}
+
+/* COST REFERENCE */
+.project-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:20px}
+.project-card-header{background:var(--dg);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center}
+.project-card-header h3{font-size:14px;font-weight:500}
+.project-meta{display:flex;gap:20px;padding:12px 18px;background:var(--pg);border-bottom:1px solid var(--border);font-size:12px}
+.project-meta span{color:var(--txt2)}
+.project-meta strong{color:var(--txt)}
+.division-group{border-bottom:1px solid var(--border)}
+.division-header{background:var(--lg);padding:7px 18px;font-size:11.5px;font-weight:600;color:var(--mg);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;display:flex;justify-content:space-between}
+.division-header:hover{background:#c5e0c5}
+.line-items{display:none}
+.line-items.open{display:block}
+.line-item-row{display:flex;justify-content:space-between;padding:7px 18px;font-size:12.5px;border-bottom:1px solid rgba(0,0,0,.04)}
+.line-item-row:last-child{border:none}
+.line-item-row:nth-child(even){background:var(--pg)}
+.line-item-code{color:var(--txt2);font-size:11px;font-family:monospace;margin-right:8px}
+.line-item-desc{flex:1}
+.line-item-amt{font-weight:500;white-space:nowrap;margin-left:12px}
+.allowance-tag{font-size:10px;background:#fff3e0;color:#e65100;padding:1px 5px;border-radius:3px;margin-left:6px}
+.cost-range-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.cost-range-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center}
+.cost-range-label{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt2);margin-bottom:6px}
+.cost-range-value{font-size:22px;font-weight:600}
+.cost-range-sub{font-size:11px;color:var(--txt2);margin-top:3px}
+
+/* DIVISION ESTIMATOR */
+.est-steps{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:20px}
+.est-step{flex:1;padding:9px 8px;text-align:center;font-size:12px;color:var(--txt2);cursor:pointer;border-right:1px solid var(--border);transition:all .15s}
+.est-step:last-child{border-right:none}
+.est-step.active{background:var(--dg);color:#fff;font-weight:500}
+.est-step.done{background:var(--pg);color:var(--mg)}
+.est-panel{display:none}.est-panel.active{display:block}
+.div-card{border:1px solid var(--border);border-radius:7px;margin-bottom:8px;overflow:hidden}
+.div-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;background:var(--pg);transition:background .15s}
+.div-hdr:hover{background:var(--lg)}
+.div-hdr-left{flex:1}
+.div-hdr-title{font-size:13px;font-weight:500}
+.div-hdr-sub{font-size:11px;color:var(--txt2);margin-top:2px}
+.div-hdr-right{display:flex;align-items:center;gap:8px}
+.div-total-badge{font-size:12.5px;font-weight:500;color:var(--dg);min-width:90px;text-align:right}
+.div-chevron{font-size:11px;color:var(--txt2);transition:transform .2s}
+.div-chevron.open{transform:rotate(180deg)}
+.div-body{display:none;border-top:1px solid var(--border)}
+.div-body.open{display:block}
+.line-row{display:grid;grid-template-columns:18px 1fr 110px;gap:8px;align-items:start;padding:8px 14px;border-bottom:1px solid rgba(0,0,0,.04)}
+.line-row:last-child{border-bottom:none}
+.line-row:nth-child(even){background:var(--pg)}
+.line-check{width:14px;height:14px;cursor:pointer;margin-top:3px;accent-color:var(--dg)}
+.line-info{}
+.line-name{font-size:12.5px;color:var(--txt)}
+.line-code{font-size:10px;color:var(--txt2);font-family:monospace;margin-right:6px}
+.line-ref{font-size:11px;color:var(--txt2);margin-top:2px}
+.line-amt{text-align:right}
+.line-amt input{width:100%;text-align:right;font-size:12.5px;padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-family:'DM Sans',sans-serif}
+.line-amt input:focus{outline:none;border-color:var(--mg)}
+.line-amt input:disabled{opacity:.35;background:var(--pg)}
+.allowance-tag{font-size:10px;background:#fff3e0;color:#e65100;padding:1px 5px;border-radius:3px;margin-left:5px}
+.est-live-total{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:14px 16px;margin-top:12px}
+.est-live-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.04)}
+.est-live-row:last-child{border:none;padding-top:8px;font-size:15px;font-weight:600}
+.est-review-section{margin-bottom:14px}
+.est-review-div{display:flex;justify-content:space-between;font-size:12.5px;font-weight:500;padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:4px}
+.est-review-item{display:flex;justify-content:space-between;font-size:12px;color:var(--txt2);padding:2px 0 2px 12px}
+.est-review-item span:last-child{font-weight:500;color:var(--txt)}
+.ref-banner{background:var(--pg);border:1px solid var(--lg);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--mg);margin-bottom:12px}
+.sf-guide{background:var(--pg);border-radius:5px;padding:8px 12px;font-size:12px;color:var(--mg);margin-top:8px}
+/* OVERHEAD inline edit */
+.inline-edit{background:transparent;border:none;border-bottom:1px dashed var(--border);font-family:'DM Sans',sans-serif;font-size:12.5px;width:80px;text-align:right;padding:2px 4px}
+.inline-edit:focus{outline:none;border-bottom-color:var(--mg)}
+.oh-cat-header{background:var(--mg);color:#fff;padding:7px 12px;font-size:11.5px;font-weight:500;letter-spacing:.3px}
+
+/* SECTION DIVIDER */
+.section-divider{font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--txt2);margin:16px 0 10px;font-weight:500;display:flex;align-items:center;gap:8px}
+.section-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* FINANCIAL color rows */
+.fin-pos{color:var(--mg);font-weight:500}
+.fin-neg{color:var(--red);font-weight:500}
+.action-btns{display:flex;gap:5px}
 </style>
 </head>
 <body>
 
 <div id="sidebar">
   <div class="sb-logo">
-    <div class="sb-logo-title">Romaine<br>Workshop</div>
-    <div class="sb-logo-sub">Business Dashboard</div>
+    <div class="sb-logo-text">
+      <div class="sb-logo-title">Romaine<br>Workshop</div>
+      <div class="sb-logo-sub">Business Dashboard</div>
+    </div>
+    <button class="sb-toggle" onclick="toggleSidebar()" title="Collapse">&#8249;</button>
   </div>
   <nav class="sb-nav">
-    <a onclick="nav('dashboard')" id="nav-dashboard" class="active"><span class="nav-icon">▦</span> Dashboard</a>
-    <a onclick="nav('new-project')" id="nav-new-project"><span class="nav-icon">＋</span> New Project</a>
+    <a onclick="nav('dashboard')" id="nav-dashboard" class="active"><span class="nav-icon">▦</span><span class="nav-label"> Dashboard</span></a>
+    <a onclick="nav('new-project')" id="nav-new-project"><span class="nav-icon">＋</span><span class="nav-label"> New Project</span></a>
     <div class="sb-section">Trackers</div>
-    <a onclick="nav('income')" id="nav-income"><span class="nav-icon">↑</span> Income</a>
-    <a onclick="nav('expenses')" id="nav-expenses"><span class="nav-icon">↓</span> Expenses</a>
-    <a onclick="nav('assets')" id="nav-assets"><span class="nav-icon">◈</span> Assets</a>
-    <a onclick="nav('liabilities')" id="nav-liabilities"><span class="nav-icon">◇</span> Liabilities</a>
+    <a onclick="nav('income')" id="nav-income"><span class="nav-icon">↑</span><span class="nav-label"> Income</span></a>
+    <a onclick="nav('expenses')" id="nav-expenses"><span class="nav-icon">↓</span><span class="nav-label"> Expenses</span></a>
+    <a onclick="nav('assets')" id="nav-assets"><span class="nav-icon">◈</span><span class="nav-label"> Assets</span></a>
+    <a onclick="nav('liabilities')" id="nav-liabilities"><span class="nav-icon">◇</span><span class="nav-label"> Liabilities</span></a>
     <div class="sb-section">Analysis</div>
-    <a onclick="nav('overhead')" id="nav-overhead"><span class="nav-icon">≡</span> Overhead</a>
-    <a onclick="nav('ip-systems')" id="nav-ip-systems"><span class="nav-icon">◉</span> IP Systems</a>
-    <a onclick="nav('financial-summary')" id="nav-financial-summary"><span class="nav-icon">∑</span> Financial Summary</a>
+    <a onclick="nav('overhead')" id="nav-overhead"><span class="nav-icon">≡</span><span class="nav-label"> Overhead</span></a>
+    <a onclick="nav('ip-systems')" id="nav-ip-systems"><span class="nav-icon">◉</span><span class="nav-label"> IP Systems</span></a>
+    <a onclick="nav('cost-reference')" id="nav-cost-reference"><span class="nav-icon">⊞</span><span class="nav-label"> Cost Reference</span></a>
+    <a onclick="nav('financial-summary')" id="nav-financial-summary"><span class="nav-icon">∑</span><span class="nav-label"> Financial Summary</span></a>
   </nav>
 </div>
 
 <div id="main">
 
-<!-- ═══════════════════════════════════════════════════════
-     DASHBOARD
-═══════════════════════════════════════════════════════ -->
+<!-- DASHBOARD -->
 <div class="page active" id="page-dashboard">
   <div class="page-header">
     <h1>Dashboard</h1>
-    <span id="dash-date" style="font-size:12px;opacity:.7"></span>
+    <span id="dash-date" style="font-size:11px;opacity:.7"></span>
   </div>
   <div class="page-content">
+    <div class="section-divider">Current Month</div>
     <div class="kpi-grid" id="kpi-row1"></div>
+    <div class="section-divider">Balance Sheet</div>
     <div class="kpi-grid" id="kpi-row2"></div>
+    <div class="section-divider">Overhead</div>
     <div class="kpi-grid" id="kpi-row3"></div>
-    <div class="grid2" style="margin-top:4px">
+    <div class="section-divider">Performance</div>
+    <div class="grid2">
       <div class="chart-card">
         <div class="chart-title">Revenue vs Expenses — Last 12 Months</div>
-        <div style="position:relative;height:220px"><canvas id="revChart" role="img" aria-label="Revenue vs Expenses line chart">Monthly revenue and expense comparison.</canvas></div>
+        <div style="position:relative;height:200px"><canvas id="revChart"></canvas></div>
       </div>
       <div class="table-wrap">
         <div class="table-header"><h3>Outstanding Invoices</h3></div>
-        <table id="outstanding-table">
+        <table>
           <thead><tr><th>Client</th><th>Service</th><th>Amount</th><th>Date</th><th></th></tr></thead>
           <tbody id="outstanding-body"></tbody>
         </table>
       </div>
     </div>
-    <div class="table-wrap" style="margin-top:20px">
+    <div class="table-wrap mt">
       <div class="table-header"><h3>Recent Activity</h3></div>
-      <table><thead><tr><th>Type</th><th>Description</th><th>Amount</th><th>Date</th></tr></thead>
-      <tbody id="activity-body"></tbody></table>
+      <table>
+        <thead><tr><th>Type</th><th>Description</th><th>Amount</th><th>Date</th></tr></thead>
+        <tbody id="activity-body"></tbody>
+      </table>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     NEW PROJECT
-═══════════════════════════════════════════════════════ -->
+<!-- NEW PROJECT -->
 <div class="page" id="page-new-project">
-  <div class="page-header"><h1>New Project</h1></div>
-  <div class="page-content" id="new-project-content" style="max-width:680px">
-    <div class="wizard-steps">
-      <div class="wstep active" id="ws1">1 · Project Info</div>
-      <div class="wstep" id="ws2">2 · Service & Cost</div>
-      <div class="wstep" id="ws3">3 · Review & Save</div>
+  <div class="page-header"><h1>New Project Estimator</h1><span style="font-size:11px;opacity:.7">Build a line-by-line cost estimate by CSI Division</span></div>
+  <div class="page-content" style="max-width:780px">
+    <div class="est-steps">
+      <div class="est-step active" id="es1" onclick="estGoStep(1)">1 · Project Info</div>
+      <div class="est-step" id="es2" onclick="estGoStep(2)">2 · Division Estimator</div>
+      <div class="est-step" id="es3" onclick="estGoStep(3)">3 · Review & Save</div>
     </div>
-    <!-- Step 1 -->
-    <div class="wizard-panel active" id="wp1">
+
+    <!-- STEP 1 -->
+    <div class="est-panel active" id="ep1">
+      <div class="section-divider">Project Basics</div>
       <div class="form-grid">
-        <div class="form-row"><label>Client Name *</label><input id="np-client" placeholder="e.g. Miller Romero" /></div>
-        <div class="form-row"><label>Date</label><input id="np-date" type="date" /></div>
+        <div class="form-row"><label>Client Name *</label><input id="est-client" placeholder="e.g. Woodjack Pasner"/></div>
+        <div class="form-row"><label>Project Date</label><input id="est-date" type="date"/></div>
+        <div class="form-row"><label>Project Name / Address</label><input id="est-name" placeholder="e.g. 1575 Santa Rita Rd ADU"/></div>
+        <div class="form-row"><label>Project Type</label>
+          <select id="est-type">
+            <option>ADU</option><option>New Construction</option><option>Remodel</option>
+            <option>Design-Build</option><option>Architecture</option>
+            <option>Construction Management</option><option>Landscape</option>
+            <option>Engineering</option><option>Other</option>
+          </select>
+        </div>
       </div>
-      <div class="form-row"><label>Project Type</label>
-        <select id="np-type">
-          <option>Architecture</option><option>Construction Management</option>
-          <option>Design-Build</option><option>Remodel</option>
-          <option>New Construction</option><option>ADU</option>
-          <option>Landscape</option><option>Engineering</option><option>Other</option>
-        </select>
-      </div>
-      <div class="form-row"><label>Notes</label><textarea id="np-notes" rows="3" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;resize:vertical"></textarea></div>
-      <button class="btn btn-primary" onclick="wpNext(1)">Next →</button>
-    </div>
-    <!-- Step 2 -->
-    <div class="wizard-panel" id="wp2">
-      <div class="form-row"><label>Service Type (CSI)</label>
-        <input id="np-search" placeholder="Search services…" style="margin-bottom:6px" oninput="filterNpServices()" />
-        <select id="np-service" size="6" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:4px" onchange="onServiceSelect()"></select>
-      </div>
-      <div id="np-ca-banner" class="ca-banner" style="display:none">⚠ Hours and/or rate based on California state average — update if you have actuals.</div>
+      <div class="section-divider">Size & Complexity</div>
       <div class="form-grid">
-        <div class="form-row"><label>Estimated Hours</label><input id="np-hours" type="number" step="0.5" oninput="calcInvoice()" /></div>
-        <div class="form-row"><label>Hourly Rate ($)</label><input id="np-rate" type="number" step="0.01" oninput="calcInvoice()" /></div>
+        <div class="form-row"><label>Square Footage (SF)</label><input type="number" id="est-sqft" placeholder="e.g. 1200" oninput="estUpdateSF()"/></div>
+        <div class="form-row"><label>Complexity / Cost Level</label>
+          <select id="est-complexity" onchange="estUpdateSF()">
+            <option value="300">Low — $300/SF  (shell only, Woodjack-level)</option>
+            <option value="420" selected>Mid — $420/SF  (full ADU, C3-level)</option>
+            <option value="700">High — $700/SF  (custom finishes)</option>
+            <option value="1600">Premium — $1,600/SF  (Reeve-level)</option>
+          </select>
+        </div>
       </div>
-      <div id="np-calc" class="calc-card" style="display:none">
-        <div class="calc-line"><span>Estimated Hours</span><span id="np-c-hrs">—</span></div>
-        <div class="calc-line"><span>Hourly Rate</span><span id="np-c-rate">—</span></div>
-        <div class="calc-line"><span>Historical Avg Cost</span><span id="np-c-hist" style="color:var(--txt2)">—</span></div>
-        <div class="calc-total"><span>Invoice Amount</span><span id="np-c-inv">—</span></div>
+      <div id="est-sf-guide" style="display:none"></div>
+      <div class="section-divider">Contract & Fees</div>
+      <div class="form-grid">
+        <div class="form-row"><label>Builder Fee %</label>
+          <select id="est-fee">
+            <option value="12.5">12.5% — Semmes & Co (shell)</option>
+            <option value="12" selected>12% — Semmes & Co (full)</option>
+            <option value="15">15% — Typical GC</option>
+            <option value="20">20% — C3 ADU rate</option>
+            <option value="25">25% — Complex / high-risk</option>
+            <option value="0">0% — Self-perform / no fee</option>
+          </select>
+        </div>
+        <div class="form-row"><label>Contingency %</label>
+          <select id="est-cont">
+            <option value="0">0% — None</option>
+            <option value="5" selected>5% — Standard</option>
+            <option value="10">10% — Complex site</option>
+            <option value="15">15% — High risk</option>
+          </select>
+        </div>
+        <div class="form-row"><label>Notes</label><textarea id="est-notes" rows="2" style="width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:5px;font-family:inherit;font-size:13px;resize:vertical"></textarea></div>
       </div>
-      <div style="display:flex;gap:10px;margin-top:16px">
-        <button class="btn btn-outline" onclick="wpBack(2)">← Back</button>
-        <button class="btn btn-primary" onclick="wpNext(2)">Next →</button>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-primary" onclick="estGoStep(2)">Next: Build Estimate →</button>
       </div>
     </div>
-    <!-- Step 3 -->
-    <div class="wizard-panel" id="wp3">
-      <div class="review-card" id="np-review"></div>
-      <div class="form-row" style="margin-top:16px"><label>Payment Status</label>
-        <select id="np-status"><option>Outstanding</option><option>Paid</option><option>Partial</option></select>
+
+    <!-- STEP 2 -->
+    <div class="est-panel" id="ep2">
+      <div id="est-ref-banner" class="ref-banner"></div>
+      <p style="font-size:11.5px;color:var(--txt2);margin-bottom:12px">Check the box next to each line item to include it. Reference amounts (Low/Mid/High) come from the 3 real projects in Cost Reference. Type your actual amount in the right column.</p>
+      <div id="est-divisions"></div>
+      <div class="est-live-total">
+        <div class="est-live-row"><span style="color:var(--txt2)">Subtotal (all divisions)</span><span id="est-sub">$0.00</span></div>
+        <div class="est-live-row"><span style="color:var(--txt2)" id="est-cont-lbl">Contingency (5%)</span><span id="est-cont-amt">$0.00</span></div>
+        <div class="est-live-row"><span style="color:var(--txt2)" id="est-fee-lbl">Builder Fee (12%)</span><span id="est-fee-amt">$0.00</span></div>
+        <div class="est-live-row"><span>TOTAL CONTRACT</span><span id="est-total" style="color:var(--mg)">$0.00</span></div>
       </div>
-      <div style="display:flex;gap:10px;margin-top:16px">
-        <button class="btn btn-outline" onclick="wpBack(3)">← Back</button>
-        <button class="btn btn-primary" onclick="saveNewProject()">Save Project</button>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn btn-outline" onclick="estGoStep(1)">← Back</button>
+        <button class="btn btn-primary" onclick="estGoStep(3)">Review Estimate →</button>
       </div>
-      <div id="np-success" style="display:none;margin-top:20px;padding:16px;background:var(--pg);border-radius:8px;text-align:center">
-        <div style="color:var(--mg);font-size:16px;font-weight:500;margin-bottom:8px">✓ Project saved!</div>
-        <div style="display:flex;gap:10px;justify-content:center">
-          <button class="btn btn-outline btn-sm" onclick="resetNewProject()">Add Another</button>
-          <button class="btn btn-primary btn-sm" onclick="nav('dashboard')">Go to Dashboard</button>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="est-panel" id="ep3">
+      <div id="est-review"></div>
+      <div class="form-row" style="margin-top:14px"><label>Payment Status</label>
+        <select id="est-status"><option>Outstanding</option><option>Paid</option><option>Partial</option></select>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn btn-outline" onclick="estGoStep(2)">← Back</button>
+        <button class="btn btn-primary" onclick="estSave()">Save to Income Tracker</button>
+      </div>
+      <div id="est-success" style="display:none;margin-top:16px;padding:14px;background:var(--pg);border-radius:7px;text-align:center">
+        <div style="color:var(--mg);font-size:15px;font-weight:500;margin-bottom:8px">Project saved successfully!</div>
+        <div style="display:flex;gap:8px;justify-content:center">
+          <button class="btn btn-outline btn-sm" onclick="estReset()">New Estimate</button>
+          <button class="btn btn-primary btn-sm" onclick="nav('dashboard')">Dashboard</button>
+          <button class="btn btn-outline btn-sm" onclick="nav('income')">View Income</button>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     INCOME
-═══════════════════════════════════════════════════════ -->
+<!-- INCOME -->
 <div class="page" id="page-income">
   <div class="page-header">
     <h1>Income Tracker</h1>
-    <button class="btn btn-primary btn-sm" onclick="openModal('income')">+ Add Income</button>
+    <button class="btn-ghost" onclick="openModal('income')">+ Add Income</button>
   </div>
   <div class="page-content">
     <div class="summary-bar" id="income-summary"></div>
@@ -299,7 +406,7 @@
       <select id="inc-filter-status" onchange="renderIncome()">
         <option value="">All Statuses</option><option>Paid</option><option>Outstanding</option><option>Partial</option>
       </select>
-      <input placeholder="Search client…" id="inc-search" oninput="renderIncome()" style="width:180px" />
+      <input placeholder="Search client…" id="inc-search" oninput="renderIncome()" style="width:160px"/>
     </div>
     <div class="table-wrap">
       <table>
@@ -310,13 +417,11 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     EXPENSES
-═══════════════════════════════════════════════════════ -->
+<!-- EXPENSES -->
 <div class="page" id="page-expenses">
   <div class="page-header">
     <h1>Expense Tracker</h1>
-    <button class="btn btn-primary btn-sm" onclick="openModal('expense')">+ Add Expense</button>
+    <button class="btn-ghost" onclick="openModal('expense')">+ Add Expense</button>
   </div>
   <div class="page-content">
     <div class="summary-bar" id="expense-summary"></div>
@@ -324,9 +429,9 @@
       <select id="exp-filter-month" onchange="renderExpenses()"><option value="">All Months</option></select>
       <select id="exp-filter-cat" onchange="renderExpenses()">
         <option value="">All Categories</option>
-        <option>Software</option><option>Rent/Office</option><option>Insurance</option>
-        <option>Marketing</option><option>Payroll</option><option>Materials</option>
-        <option>Subcontractor</option><option>Travel</option><option>Utilities</option><option>Misc</option>
+        <option>Software</option><option>Rent/Office</option><option>Insurance</option><option>Marketing</option>
+        <option>Payroll</option><option>Materials</option><option>Subcontractor</option><option>Travel</option>
+        <option>Utilities</option><option>Misc</option>
       </select>
     </div>
     <div class="table-wrap">
@@ -338,47 +443,41 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     ASSETS
-═══════════════════════════════════════════════════════ -->
+<!-- ASSETS -->
 <div class="page" id="page-assets">
   <div class="page-header">
     <h1>Asset Register</h1>
-    <button class="btn btn-primary btn-sm" onclick="openModal('asset')">+ Add Asset</button>
+    <button class="btn-ghost" onclick="openModal('asset')">+ Add Asset</button>
   </div>
   <div class="page-content">
     <div class="summary-bar" id="asset-summary"></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Asset</th><th>Category</th><th>Description</th><th>Purchase Cost</th><th>Current Value</th><th>Acquired</th><th>Useful Life</th><th>Annual Depr.</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Asset</th><th>Category</th><th>Description</th><th>Purchase Cost</th><th>Current Value</th><th>Acquired</th><th>Life (yrs)</th><th>Annual Depr.</th><th>Actions</th></tr></thead>
         <tbody id="asset-body"></tbody>
       </table>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     LIABILITIES
-═══════════════════════════════════════════════════════ -->
+<!-- LIABILITIES -->
 <div class="page" id="page-liabilities">
   <div class="page-header">
     <h1>Liability Tracker</h1>
-    <button class="btn btn-primary btn-sm" onclick="openModal('liability')">+ Add Liability</button>
+    <button class="btn-ghost" onclick="openModal('liability')">+ Add Liability</button>
   </div>
   <div class="page-content">
     <div class="summary-bar" id="liability-summary"></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Creditor</th><th>Type</th><th>Balance</th><th>Interest Rate</th><th>Monthly Payment</th><th>Maturity</th><th>Annual Interest</th><th>Notes</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Creditor</th><th>Type</th><th>Balance</th><th>Interest Rate</th><th>Monthly Pmt</th><th>Maturity</th><th>Annual Interest</th><th>Notes</th><th>Actions</th></tr></thead>
         <tbody id="liability-body"></tbody>
       </table>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     OVERHEAD
-═══════════════════════════════════════════════════════ -->
+<!-- OVERHEAD -->
 <div class="page" id="page-overhead">
   <div class="page-header"><h1>Overhead Summary</h1></div>
   <div class="page-content">
@@ -393,9 +492,7 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     IP SYSTEMS
-═══════════════════════════════════════════════════════ -->
+<!-- IP SYSTEMS -->
 <div class="page" id="page-ip-systems">
   <div class="page-header"><h1>IP Systems Tracker</h1></div>
   <div class="page-content">
@@ -412,13 +509,52 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     FINANCIAL SUMMARY
-═══════════════════════════════════════════════════════ -->
+<!-- COST REFERENCE -->
+<div class="page" id="page-cost-reference">
+  <div class="page-header"><h1>Cost Reference</h1><span style="font-size:11px;opacity:.7">SLO County · Real Project Data</span></div>
+  <div class="page-content">
+    <div class="section-divider">SLO County Cost Benchmarks</div>
+    <div class="cost-range-grid">
+      <div class="cost-range-card">
+        <div class="cost-range-label">Low-Cost ADU</div>
+        <div class="cost-range-value" style="color:var(--mg)">~$300/SF</div>
+        <div class="cost-range-sub">Structural shell, no MEP/finishes</div>
+        <div style="margin-top:8px"><span class="pill pill-low">Woodjack ADU — $325/SF</span></div>
+      </div>
+      <div class="cost-range-card">
+        <div class="cost-range-label">Mid-Range ADU / Residential</div>
+        <div class="cost-range-value" style="color:var(--gold)">$400–500/SF</div>
+        <div class="cost-range-sub">Full build, mid-level finishes</div>
+        <div style="margin-top:8px"><span class="pill pill-mid">C3 ADU — $420/SF</span></div>
+      </div>
+      <div class="cost-range-card">
+        <div class="cost-range-label">High-End Custom</div>
+        <div class="cost-range-value" style="color:var(--red)">$600–1,600+/SF</div>
+        <div class="cost-range-sub">Complex site, high-end finishes</div>
+        <div style="margin-top:8px"><span class="pill pill-high">Reeve Residence — $1,600/SF</span></div>
+      </div>
+    </div>
+
+    <div class="section-divider">Project Cost Breakdowns <span style="font-size:11px;font-weight:400;color:var(--txt2)">(click division to expand)</span></div>
+    <div id="cost-ref-projects"></div>
+
+    <div class="section-divider">Key Notes</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;font-size:12.5px;line-height:1.7;color:var(--txt2)">
+      <p>• Builder fees range from <strong>12% to 20%</strong> depending on project type and complexity</p>
+      <p>• Some line items are <strong>allowances</strong> — treat as variable inputs in estimates</p>
+      <p>• Costs reflect <strong>Central Coast (SLO County)</strong> market conditions</p>
+      <p>• Finish level is the primary cost driver — site conditions significantly impact total cost</p>
+      <p>• Normalize costs by CSI division for cross-project comparison</p>
+      <p>• Trade distribution: Framing 12–18% · Foundation 8–12% · MEP 15–25% · Finishes 25–40% · GC+OH 10–20%</p>
+    </div>
+  </div>
+</div>
+
+<!-- FINANCIAL SUMMARY -->
 <div class="page" id="page-financial-summary">
   <div class="page-header">
     <h1>Financial Summary</h1>
-    <button class="btn btn-outline btn-sm" style="color:#fff;border-color:rgba(255,255,255,.5)" onclick="exportCSV()">Export CSV</button>
+    <button class="btn-ghost" onclick="exportCSV()">Export CSV</button>
   </div>
   <div class="page-content">
     <div class="summary-bar" id="fin-summary"></div>
@@ -449,72 +585,413 @@
   </div>
 </div>
 
-<!-- TOAST -->
 <div id="toast"><div class="toast-inner" id="toast-inner"></div></div>
 
 <script>
-// ═══════════════════════════════════════════════════════
-// DATA LAYER
-// ═══════════════════════════════════════════════════════
-const CSI_SEED=[{"code":"01:1015","name":"Arch & Engineering","division":"General Conditions","avg_total":18092.18,"avg_hrs":null,"hourly_rate":null},{"code":"01:1040","name":"Client Support & Selection Development","division":"General Conditions","avg_total":36785.23,"avg_hrs":595.3,"hourly_rate":74},{"code":"01:1045","name":"Supervision","division":"General Conditions","avg_total":54082.03,"avg_hrs":2189.8,"hourly_rate":76.5},{"code":"01:1510","name":"Temporary Utilities","division":"General Conditions","avg_total":3633.17,"avg_hrs":4031.7,"hourly_rate":null},{"code":"01:1512","name":"General Labor","division":"General Conditions","avg_total":15734.47,"avg_hrs":583.9,"hourly_rate":54},{"code":"01:1560","name":"Daily Jobsite Cleanup","division":"General Conditions","avg_total":13524.8,"avg_hrs":399.3,"hourly_rate":54},{"code":"01:1565","name":"Landfill and Recycling","division":"General Conditions","avg_total":3932.21,"avg_hrs":3887.5,"hourly_rate":null},{"code":"02:2110","name":"Hauling","division":"Sitework","avg_total":80256.83,"avg_hrs":null,"hourly_rate":null},{"code":"02:2210","name":"Grading","division":"Sitework","avg_total":73653.97,"avg_hrs":null,"hourly_rate":null},{"code":"02:2212","name":"Finish Grading","division":"Sitework","avg_total":4926.89,"avg_hrs":null,"hourly_rate":null},{"code":"02:2270","name":"Erosion Control","division":"Sitework","avg_total":9689.8,"avg_hrs":null,"hourly_rate":null},{"code":"02:2500","name":"Paving","division":"Sitework","avg_total":59892.71,"avg_hrs":null,"hourly_rate":7.18},{"code":"02:2670","name":"Water Well","division":"Sitework","avg_total":23030.92,"avg_hrs":null,"hourly_rate":null},{"code":"02:2740","name":"Septic","division":"Sitework","avg_total":25766.05,"avg_hrs":1350,"hourly_rate":15.45},{"code":"02:2780","name":"General Utilities","division":"Sitework","avg_total":59612.03,"avg_hrs":null,"hourly_rate":null},{"code":"02:2830","name":"Fences","division":"Sitework","avg_total":39973.51,"avg_hrs":null,"hourly_rate":null},{"code":"02:2900","name":"Landscaping","division":"Sitework","avg_total":152879.25,"avg_hrs":null,"hourly_rate":null},{"code":"03:3100","name":"Concrete","division":"Concrete","avg_total":238842.7,"avg_hrs":null,"hourly_rate":null},{"code":"03:3320","name":"Flatwork","division":"Concrete","avg_total":49159.29,"avg_hrs":null,"hourly_rate":null},{"code":"03:3350","name":"Concrete Floor Finishing","division":"Concrete","avg_total":11292.87,"avg_hrs":null,"hourly_rate":6.93},{"code":"04:4200","name":"Masonry","division":"Masonry","avg_total":44994.68,"avg_hrs":1060,"hourly_rate":46.19},{"code":"04:4450","name":"Stone Veneer Masonry","division":"Masonry","avg_total":162350.08,"avg_hrs":1060,"hourly_rate":55.15},{"code":"04:4465","name":"Granite Surfaces","division":"Masonry","avg_total":27082.73,"avg_hrs":null,"hourly_rate":null},{"code":"05:5100","name":"Structural Metal","division":"Metals","avg_total":116394.99,"avg_hrs":null,"hourly_rate":null},{"code":"05:5700","name":"Ornamental Ironwork","division":"Metals","avg_total":29168.09,"avg_hrs":null,"hourly_rate":null},{"code":"06:6100","name":"Framing Materials and Labor","division":"Wood & Plastics","avg_total":211434.82,"avg_hrs":3563.9,"hourly_rate":59.54},{"code":"06:6110","name":"Siding Materials & Labor","division":"Wood & Plastics","avg_total":56449.93,"avg_hrs":1846.5,"hourly_rate":24.16},{"code":"06:6110b","name":"Siding - Metals","division":"Wood & Plastics","avg_total":87486.76,"avg_hrs":2275,"hourly_rate":41.63},{"code":"06:6120","name":"Decking Materials & Labor","division":"Wood & Plastics","avg_total":25266.8,"avg_hrs":300,"hourly_rate":34.68},{"code":"06:6200","name":"Finish Carpentry","division":"Wood & Plastics","avg_total":28289.66,"avg_hrs":null,"hourly_rate":null},{"code":"06:6400","name":"Cabinets","division":"Wood & Plastics","avg_total":119935.13,"avg_hrs":null,"hourly_rate":null},{"code":"07:7200","name":"Insulation","division":"Thermal & Moisture","avg_total":42359.32,"avg_hrs":3862.3,"hourly_rate":13.28},{"code":"07:7300a","name":"Roofing - Tile","division":"Thermal & Moisture","avg_total":127489.28,"avg_hrs":7324.8,"hourly_rate":16.1},{"code":"07:7300b","name":"Roofing - Metal","division":"Thermal & Moisture","avg_total":117252.3,"avg_hrs":4842,"hourly_rate":12.74},{"code":"07:7300c","name":"Roofing - Composite","division":"Thermal & Moisture","avg_total":9970,"avg_hrs":1831,"hourly_rate":5.94},{"code":"07:7300d","name":"Roofing - Flat","division":"Thermal & Moisture","avg_total":40910.7,"avg_hrs":2327,"hourly_rate":17.27},{"code":"07:7300e","name":"Roofing - ALX","division":"Thermal & Moisture","avg_total":20625,"avg_hrs":554,"hourly_rate":47.19},{"code":"08:8200","name":"Interior Doors","division":"Doors & Windows","avg_total":48442.6,"avg_hrs":null,"hourly_rate":null},{"code":"08:8330","name":"Exterior Doors","division":"Doors & Windows","avg_total":12623.91,"avg_hrs":null,"hourly_rate":null},{"code":"08:8600","name":"Windows","division":"Doors & Windows","avg_total":51636.57,"avg_hrs":3559.7,"hourly_rate":18.17},{"code":"09:9200","name":"Stucco","division":"Finishes","avg_total":64309.49,"avg_hrs":2915.5,"hourly_rate":11.48},{"code":"09:9201","name":"Interior Plastering","division":"Finishes","avg_total":45753.54,"avg_hrs":null,"hourly_rate":null},{"code":"09:9250","name":"Drywall","division":"Finishes","avg_total":35765.48,"avg_hrs":8745,"hourly_rate":3.23},{"code":"09:9300","name":"Tile","division":"Finishes","avg_total":101710.14,"avg_hrs":865,"hourly_rate":130.98},{"code":"09:9550","name":"Wood Floors","division":"Finishes","avg_total":41097.61,"avg_hrs":1664.7,"hourly_rate":22.4},{"code":"09:9650","name":"Resilient Flooring","division":"Finishes","avg_total":10993.91,"avg_hrs":1413.7,"hourly_rate":9.7},{"code":"09:9680","name":"Carpets","division":"Finishes","avg_total":6351.82,"avg_hrs":250.5,"hourly_rate":27.84},{"code":"09:9900","name":"Painting","division":"Finishes","avg_total":39885.23,"avg_hrs":3043.6,"hourly_rate":13.34},{"code":"10:10300","name":"Fireplace Mat & Labor","division":"Specialties","avg_total":16316.67,"avg_hrs":null,"hourly_rate":null},{"code":"10:10822","name":"Shower Enclosures","division":"Specialties","avg_total":4879.86,"avg_hrs":null,"hourly_rate":null},{"code":"10:10900","name":"Closets","division":"Specialties","avg_total":5060.93,"avg_hrs":null,"hourly_rate":null},{"code":"11:11200","name":"Water Treatment","division":"Equipment","avg_total":6328.66,"avg_hrs":null,"hourly_rate":null},{"code":"11:11452","name":"Appliances","division":"Equipment","avg_total":30347.67,"avg_hrs":null,"hourly_rate":null},{"code":"13:13170","name":"Spa","division":"Special Construction","avg_total":17520,"avg_hrs":null,"hourly_rate":null},{"code":"13:13180","name":"Pool","division":"Special Construction","avg_total":342218,"avg_hrs":628,"hourly_rate":null},{"code":"13:13602","name":"PV Solar","division":"Special Construction","avg_total":42197.5,"avg_hrs":7.1,"hourly_rate":null},{"code":"13:13800","name":"Safety (FRP)","division":"Special Construction","avg_total":10968.46,"avg_hrs":991,"hourly_rate":11.07},{"code":"13:13900","name":"Fire Sprinklers","division":"Special Construction","avg_total":7455.39,"avg_hrs":3131.1,"hourly_rate":2.81},{"code":"14:14100","name":"Elevators","division":"Conveying","avg_total":80000,"avg_hrs":null,"hourly_rate":null},{"code":"15:15400","name":"Plumbing","division":"Mechanical","avg_total":58628.27,"avg_hrs":2630.8,"hourly_rate":20.69},{"code":"15:15401","name":"Plumbing Fixtures","division":"Mechanical","avg_total":18412.11,"avg_hrs":null,"hourly_rate":null},{"code":"15:15500","name":"HVAC","division":"Mechanical","avg_total":56872.2,"avg_hrs":2863.6,"hourly_rate":19.99},{"code":"15:15515","name":"Hydronic Heating","division":"Mechanical","avg_total":42123,"avg_hrs":null,"hourly_rate":null},{"code":"16:16200","name":"Back Up Power","division":"Electrical","avg_total":25818.5,"avg_hrs":null,"hourly_rate":null},{"code":"16:16400","name":"Electrical","division":"Electrical","avg_total":101941.94,"avg_hrs":3541.2,"hourly_rate":29.86},{"code":"16:16401","name":"Light Fixtures","division":"Electrical","avg_total":14182.82,"avg_hrs":null,"hourly_rate":null},{"code":"16:16700","name":"Low Voltage","division":"Electrical","avg_total":64155.37,"avg_hrs":4985.2,"hourly_rate":12.25}];
+// ═══════════════════ DATA ═══════════════════
+const CSI_SEED=[
+  {"code":"01:1015","name":"Arch & Engineering","division":"General Conditions","avg_total":18092.18,"avg_hrs":null,"hourly_rate":null},
+  {"code":"01:1040","name":"Client Support & Selection Development","division":"General Conditions","avg_total":36785.23,"avg_hrs":595.3,"hourly_rate":74},
+  {"code":"01:1045","name":"Supervision","division":"General Conditions","avg_total":54082.03,"avg_hrs":2189.8,"hourly_rate":76.5},
+  {"code":"01:1510","name":"Temporary Utilities","division":"General Conditions","avg_total":3633.17,"avg_hrs":4031.7,"hourly_rate":null},
+  {"code":"01:1512","name":"General Labor","division":"General Conditions","avg_total":15734.47,"avg_hrs":583.9,"hourly_rate":54},
+  {"code":"01:1560","name":"Daily Jobsite Cleanup","division":"General Conditions","avg_total":13524.8,"avg_hrs":399.3,"hourly_rate":54},
+  {"code":"01:1565","name":"Landfill and Recycling","division":"General Conditions","avg_total":3932.21,"avg_hrs":3887.5,"hourly_rate":null},
+  {"code":"02:2110","name":"Hauling","division":"Sitework","avg_total":80256.83,"avg_hrs":null,"hourly_rate":null},
+  {"code":"02:2210","name":"Grading","division":"Sitework","avg_total":73653.97,"avg_hrs":null,"hourly_rate":null},
+  {"code":"02:2212","name":"Finish Grading","division":"Sitework","avg_total":4926.89,"avg_hrs":null,"hourly_rate":null},
+  {"code":"02:2270","name":"Erosion Control","division":"Sitework","avg_total":9689.8,"avg_hrs":null,"hourly_rate":null},
+  {"code":"02:2500","name":"Paving","division":"Sitework","avg_total":59892.71,"avg_hrs":null,"hourly_rate":7.18},
+  {"code":"02:2670","name":"Water Well","division":"Sitework","avg_total":23030.92,"avg_hrs":null,"hourly_rate":null},
+  {"code":"02:2740","name":"Septic","division":"Sitework","avg_total":25766.05,"avg_hrs":1350,"hourly_rate":15.45},
+  {"code":"02:2780","name":"General Utilities","division":"Sitework","avg_total":59612.03,"avg_hrs":null,"hourly_rate":null},
+  {"code":"02:2830","name":"Fences","division":"Sitework","avg_total":39973.51,"avg_hrs":null,"hourly_rate":null},
+  {"code":"02:2900","name":"Landscaping","division":"Sitework","avg_total":152879.25,"avg_hrs":null,"hourly_rate":null},
+  {"code":"03:3100","name":"Concrete","division":"Concrete","avg_total":238842.7,"avg_hrs":null,"hourly_rate":null},
+  {"code":"03:3320","name":"Flatwork","division":"Concrete","avg_total":49159.29,"avg_hrs":null,"hourly_rate":null},
+  {"code":"03:3350","name":"Concrete Floor Finishing","division":"Concrete","avg_total":11292.87,"avg_hrs":null,"hourly_rate":6.93},
+  {"code":"04:4200","name":"Masonry","division":"Masonry","avg_total":44994.68,"avg_hrs":1060,"hourly_rate":46.19},
+  {"code":"04:4450","name":"Stone Veneer Masonry","division":"Masonry","avg_total":162350.08,"avg_hrs":1060,"hourly_rate":55.15},
+  {"code":"04:4465","name":"Granite Surfaces","division":"Masonry","avg_total":27082.73,"avg_hrs":null,"hourly_rate":null},
+  {"code":"05:5100","name":"Structural Metal","division":"Metals","avg_total":116394.99,"avg_hrs":null,"hourly_rate":null},
+  {"code":"05:5700","name":"Ornamental Ironwork","division":"Metals","avg_total":29168.09,"avg_hrs":null,"hourly_rate":null},
+  {"code":"06:6100","name":"Framing Materials and Labor","division":"Wood & Plastics","avg_total":211434.82,"avg_hrs":3563.9,"hourly_rate":59.54},
+  {"code":"06:6110","name":"Siding Materials & Labor","division":"Wood & Plastics","avg_total":56449.93,"avg_hrs":1846.5,"hourly_rate":24.16},
+  {"code":"06:6110b","name":"Siding - Metals","division":"Wood & Plastics","avg_total":87486.76,"avg_hrs":2275,"hourly_rate":41.63},
+  {"code":"06:6120","name":"Decking Materials & Labor","division":"Wood & Plastics","avg_total":25266.8,"avg_hrs":300,"hourly_rate":34.68},
+  {"code":"06:6200","name":"Finish Carpentry","division":"Wood & Plastics","avg_total":28289.66,"avg_hrs":null,"hourly_rate":null},
+  {"code":"06:6400","name":"Cabinets","division":"Wood & Plastics","avg_total":119935.13,"avg_hrs":null,"hourly_rate":null},
+  {"code":"07:7200","name":"Insulation","division":"Thermal & Moisture","avg_total":42359.32,"avg_hrs":3862.3,"hourly_rate":13.28},
+  {"code":"07:7300a","name":"Roofing - Tile","division":"Thermal & Moisture","avg_total":127489.28,"avg_hrs":7324.8,"hourly_rate":16.1},
+  {"code":"07:7300b","name":"Roofing - Metal","division":"Thermal & Moisture","avg_total":117252.3,"avg_hrs":4842,"hourly_rate":12.74},
+  {"code":"07:7300c","name":"Roofing - Composite","division":"Thermal & Moisture","avg_total":9970,"avg_hrs":1831,"hourly_rate":5.94},
+  {"code":"07:7300d","name":"Roofing - Flat","division":"Thermal & Moisture","avg_total":40910.7,"avg_hrs":2327,"hourly_rate":17.27},
+  {"code":"07:7300e","name":"Roofing - ALX","division":"Thermal & Moisture","avg_total":20625,"avg_hrs":554,"hourly_rate":47.19},
+  {"code":"08:8200","name":"Interior Doors","division":"Doors & Windows","avg_total":48442.6,"avg_hrs":null,"hourly_rate":null},
+  {"code":"08:8330","name":"Exterior Doors","division":"Doors & Windows","avg_total":12623.91,"avg_hrs":null,"hourly_rate":null},
+  {"code":"08:8600","name":"Windows","division":"Doors & Windows","avg_total":51636.57,"avg_hrs":3559.7,"hourly_rate":18.17},
+  {"code":"09:9200","name":"Stucco","division":"Finishes","avg_total":64309.49,"avg_hrs":2915.5,"hourly_rate":11.48},
+  {"code":"09:9201","name":"Interior Plastering","division":"Finishes","avg_total":45753.54,"avg_hrs":null,"hourly_rate":null},
+  {"code":"09:9250","name":"Drywall","division":"Finishes","avg_total":35765.48,"avg_hrs":8745,"hourly_rate":3.23},
+  {"code":"09:9300","name":"Tile","division":"Finishes","avg_total":101710.14,"avg_hrs":865,"hourly_rate":130.98},
+  {"code":"09:9550","name":"Wood Floors","division":"Finishes","avg_total":41097.61,"avg_hrs":1664.7,"hourly_rate":22.4},
+  {"code":"09:9650","name":"Resilient Flooring","division":"Finishes","avg_total":10993.91,"avg_hrs":1413.7,"hourly_rate":9.7},
+  {"code":"09:9680","name":"Carpets","division":"Finishes","avg_total":6351.82,"avg_hrs":250.5,"hourly_rate":27.84},
+  {"code":"09:9900","name":"Painting","division":"Finishes","avg_total":39885.23,"avg_hrs":3043.6,"hourly_rate":13.34},
+  {"code":"10:10300","name":"Fireplace Mat & Labor","division":"Specialties","avg_total":16316.67,"avg_hrs":null,"hourly_rate":null},
+  {"code":"10:10822","name":"Shower Enclosures","division":"Specialties","avg_total":4879.86,"avg_hrs":null,"hourly_rate":null},
+  {"code":"10:10900","name":"Closets","division":"Specialties","avg_total":5060.93,"avg_hrs":null,"hourly_rate":null},
+  {"code":"11:11200","name":"Water Treatment","division":"Equipment","avg_total":6328.66,"avg_hrs":null,"hourly_rate":null},
+  {"code":"11:11452","name":"Appliances","division":"Equipment","avg_total":30347.67,"avg_hrs":null,"hourly_rate":null},
+  {"code":"13:13170","name":"Spa","division":"Special Construction","avg_total":17520,"avg_hrs":null,"hourly_rate":null},
+  {"code":"13:13180","name":"Pool","division":"Special Construction","avg_total":342218,"avg_hrs":628,"hourly_rate":null},
+  {"code":"13:13602","name":"PV Solar","division":"Special Construction","avg_total":42197.5,"avg_hrs":7.1,"hourly_rate":null},
+  {"code":"13:13800","name":"Safety (FRP)","division":"Special Construction","avg_total":10968.46,"avg_hrs":991,"hourly_rate":11.07},
+  {"code":"13:13900","name":"Fire Sprinklers","division":"Special Construction","avg_total":7455.39,"avg_hrs":3131.1,"hourly_rate":2.81},
+  {"code":"14:14100","name":"Elevators","division":"Conveying","avg_total":80000,"avg_hrs":null,"hourly_rate":null},
+  {"code":"15:15400","name":"Plumbing","division":"Mechanical","avg_total":58628.27,"avg_hrs":2630.8,"hourly_rate":20.69},
+  {"code":"15:15401","name":"Plumbing Fixtures","division":"Mechanical","avg_total":18412.11,"avg_hrs":null,"hourly_rate":null},
+  {"code":"15:15500","name":"HVAC","division":"Mechanical","avg_total":56872.2,"avg_hrs":2863.6,"hourly_rate":19.99},
+  {"code":"15:15515","name":"Hydronic Heating","division":"Mechanical","avg_total":42123,"avg_hrs":null,"hourly_rate":null},
+  {"code":"16:16200","name":"Back Up Power","division":"Electrical","avg_total":25818.5,"avg_hrs":null,"hourly_rate":null},
+  {"code":"16:16400","name":"Electrical","division":"Electrical","avg_total":101941.94,"avg_hrs":3541.2,"hourly_rate":29.86},
+  {"code":"16:16401","name":"Light Fixtures","division":"Electrical","avg_total":14182.82,"avg_hrs":null,"hourly_rate":null},
+  {"code":"16:16700","name":"Low Voltage","division":"Electrical","avg_total":64155.37,"avg_hrs":4985.2,"hourly_rate":12.25}
+];
 
-const OH_SEED=[{category:"Software",item:"Revit / BIM License",monthly_cost:310,vendor_notes:"Autodesk"},{category:"Software",item:"AutoCAD",monthly_cost:220,vendor_notes:"Autodesk"},{category:"Software",item:"Project Management",monthly_cost:49,vendor_notes:"Asana/Monday"},{category:"Software",item:"Accounting",monthly_cost:85,vendor_notes:"QuickBooks"},{category:"Software",item:"Adobe Creative Suite",monthly_cost:60,vendor_notes:"Adobe"},{category:"Software",item:"Microsoft 365",monthly_cost:25,vendor_notes:"Microsoft"},{category:"Rent/Office",item:"Office Lease",monthly_cost:0,vendor_notes:""},{category:"Rent/Office",item:"Utilities",monthly_cost:0,vendor_notes:""},{category:"Rent/Office",item:"Internet / Phone",monthly_cost:0,vendor_notes:""},{category:"Insurance",item:"General Liability",monthly_cost:0,vendor_notes:""},{category:"Insurance",item:"Professional Liability (E&O)",monthly_cost:0,vendor_notes:""},{category:"Insurance",item:"Workers Comp",monthly_cost:0,vendor_notes:""},{category:"Marketing",item:"Website / SEO",monthly_cost:0,vendor_notes:""},{category:"Marketing",item:"Advertising",monthly_cost:0,vendor_notes:""},{category:"Payroll",item:"Salaries",monthly_cost:0,vendor_notes:""},{category:"Payroll",item:"Payroll Taxes",monthly_cost:0,vendor_notes:"~12% of salary"},{category:"Misc",item:"Bank Fees",monthly_cost:0,vendor_notes:""},{category:"Misc",item:"Legal / Accounting",monthly_cost:0,vendor_notes:""}];
+const OH_SEED=[
+  {category:"Software",item:"Revit / BIM License",monthly_cost:310,vendor_notes:"Autodesk"},
+  {category:"Software",item:"AutoCAD",monthly_cost:220,vendor_notes:"Autodesk"},
+  {category:"Software",item:"Project Management",monthly_cost:49,vendor_notes:"Asana/Monday"},
+  {category:"Software",item:"Accounting",monthly_cost:85,vendor_notes:"QuickBooks"},
+  {category:"Software",item:"Adobe Creative Suite",monthly_cost:60,vendor_notes:"Adobe"},
+  {category:"Software",item:"Microsoft 365",monthly_cost:25,vendor_notes:"Microsoft"},
+  {category:"Rent/Office",item:"Office Lease",monthly_cost:0,vendor_notes:""},
+  {category:"Rent/Office",item:"Utilities",monthly_cost:0,vendor_notes:""},
+  {category:"Rent/Office",item:"Internet / Phone",monthly_cost:0,vendor_notes:""},
+  {category:"Insurance",item:"General Liability",monthly_cost:0,vendor_notes:""},
+  {category:"Insurance",item:"Professional Liability (E&O)",monthly_cost:0,vendor_notes:""},
+  {category:"Insurance",item:"Workers Comp",monthly_cost:0,vendor_notes:""},
+  {category:"Marketing",item:"Website / SEO",monthly_cost:0,vendor_notes:""},
+  {category:"Marketing",item:"Advertising",monthly_cost:0,vendor_notes:""},
+  {category:"Payroll",item:"Salaries",monthly_cost:0,vendor_notes:""},
+  {category:"Payroll",item:"Payroll Taxes",monthly_cost:0,vendor_notes:"~12% of salary"},
+  {category:"Misc",item:"Bank Fees",monthly_cost:0,vendor_notes:""},
+  {category:"Misc",item:"Legal / Accounting",monthly_cost:0,vendor_notes:""}
+];
 
+// Real project cost data from PDF
+const PROJECTS=[
+  {
+    id:"woodjack",
+    name:"Woodjack Pasner ADU",
+    type:"ADU — Structural Shell Only",
+    sqft:1200, total:391702.11, psf:325, builderFee:12.5,
+    badge:"Low",
+    description:"Roughed-in shell only. No MEP or interior finishes. Baseline for low-cost construction.",
+    divisions:[
+      {name:"Division 1 — General Requirements", total:44152, items:[
+        {code:"1016",desc:"Blueprinting and Copying",amt:500,allowance:false},
+        {code:"1040",desc:"Client Communications & Selection Development",amt:6720,allowance:true},
+        {code:"1045",desc:"Project Supervision",amt:23520,allowance:false},
+        {code:"1500",desc:"Construction Facilities",amt:400,allowance:false},
+        {code:"1505",desc:"Mobilization",amt:1680,allowance:false},
+        {code:"1510",desc:"Temporary Utilities",amt:1250,allowance:false},
+        {code:"1512",desc:"General Labor",amt:5920,allowance:false},
+        {code:"1560",desc:"Construction Clean-up",amt:740,allowance:false},
+        {code:"1565",desc:"Landfill / Dumpster Fees",amt:2250,allowance:false},
+        {code:"1700",desc:"Contract Close Out",amt:672,allowance:false},
+        {code:"1701",desc:"Closing Materials",amt:500,allowance:false},
+      ]},
+      {name:"Division 2 — Sitework", total:59553, items:[
+        {code:"2210",desc:"Grading",amt:19790,allowance:false},
+        {code:"2212",desc:"Finish Grading",amt:4500,allowance:false},
+        {code:"2270",desc:"Slope Protection & Erosion Control",amt:5760,allowance:true},
+        {code:"2280",desc:"Tree Protection",amt:500,allowance:true},
+        {code:"2665",desc:"Water Hook Up",amt:15200,allowance:true},
+        {code:"2740",desc:"Septic System",amt:30205,allowance:false},
+        {code:"2780",desc:"General Utilities",amt:27750,allowance:true},
+      ]},
+      {name:"Division 3 — Concrete", total:48495, items:[
+        {code:"3100",desc:"Structural Concrete",amt:37910,allowance:false},
+        {code:"3320",desc:"Flat Work - Patio Slabs, Pathways",amt:10585,allowance:false},
+      ]},
+      {name:"Division 5 — Metals", total:1250, items:[
+        {code:"5580",desc:"Sheetmetal Fabrication",amt:1250,allowance:true},
+      ]},
+      {name:"Division 6 — Wood & Plastics", total:124449, items:[
+        {code:"6020",desc:"Structural Hardware",amt:1635,allowance:false},
+        {code:"6100",desc:"Framing",amt:76097,allowance:false},
+        {code:"6110",desc:"Siding Materials",amt:29389,allowance:false},
+        {code:"6113",desc:"Set Windows",amt:7611,allowance:false},
+        {code:"6115",desc:"Soffits and Pickup",amt:7000,allowance:true},
+        {code:"6215",desc:"Hang Doors",amt:2718,allowance:false},
+      ]},
+      {name:"Division 7 — Thermal & Moisture", total:14228, items:[
+        {code:"7100",desc:"Waterproofing",amt:3128,allowance:false},
+        {code:"7300",desc:"Roofing",amt:11100,allowance:false},
+      ]},
+      {name:"Division 8 — Doors & Windows", total:10400, items:[
+        {code:"8200",desc:"Doors",amt:4000,allowance:true},
+        {code:"8600",desc:"Windows",amt:6000,allowance:true},
+        {code:"8710",desc:"Door Hardware & Locksets",amt:400,allowance:true},
+      ]},
+      {name:"Division 11 — Equipment", total:1500, items:[
+        {code:"11880",desc:"Equipment Rental",amt:1500,allowance:true},
+      ]},
+    ]
+  },
+  {
+    id:"c3adu",
+    name:"C3 ADU — 313 Patricia Drive",
+    type:"ADU — Full Residential Build",
+    sqft:1500, total:632549.97, psf:420, builderFee:20,
+    badge:"Mid",
+    description:"Full residential build with mid-level finishes. Representative of typical ADU construction in SLO County.",
+    divisions:[
+      {name:"Division 1 — General Requirements", total:51836, items:[
+        {code:"1040",desc:"Client Support",amt:2800,allowance:true},
+        {code:"1045",desc:"Supervision",amt:26600,allowance:false},
+        {code:"1400",desc:"Energy Admin",amt:590,allowance:true},
+        {code:"1505",desc:"Mobilization",amt:1100,allowance:false},
+        {code:"1510",desc:"Temporary Utilities",amt:1200,allowance:false},
+        {code:"1512",desc:"General Labor",amt:4800,allowance:false},
+        {code:"1560",desc:"Construction Clean Up",amt:2000,allowance:false},
+        {code:"1565",desc:"Landfill / Dumpster",amt:5250,allowance:false},
+        {code:"1640",desc:"Finish Protection",amt:3296,allowance:false},
+        {code:"1700",desc:"Contract Close Out",amt:2250,allowance:false},
+        {code:"1710",desc:"Finish Cleaning",amt:1200,allowance:false},
+      ]},
+      {name:"Division 2 — Sitework", total:76545, items:[
+        {code:"2050",desc:"Demolition",amt:8950,allowance:false},
+        {code:"2210",desc:"Grading",amt:22000,allowance:false},
+        {code:"2270",desc:"Slope Protection & Erosion Control",amt:2600,allowance:true},
+        {code:"2300",desc:"Retaining Wall Waterproofing",amt:6320,allowance:true},
+        {code:"2665",desc:"Water Hook Up",amt:5400,allowance:false},
+        {code:"2720",desc:"Storm Drainage Controls",amt:12500,allowance:false},
+        {code:"2780",desc:"General Utilities",amt:18775,allowance:false},
+      ]},
+      {name:"Division 3 — Concrete", total:70665, items:[
+        {code:"3100",desc:"Structural Concrete",amt:56665,allowance:false},
+        {code:"3320",desc:"Concrete Flatwork",amt:14000,allowance:true},
+      ]},
+      {name:"Division 4 — Masonry", total:12735, items:[
+        {code:"4465",desc:"Stone Counter Tops",amt:12735,allowance:false},
+      ]},
+      {name:"Division 5 — Metals", total:2800, items:[
+        {code:"5580",desc:"Sheetmetal",amt:2800,allowance:true},
+      ]},
+      {name:"Division 6 — Wood & Plastics", total:160766, items:[
+        {code:"6020",desc:"Structural Hardware",amt:2500,allowance:false},
+        {code:"6100",desc:"Wood Framing",amt:70000,allowance:false},
+        {code:"6110",desc:"Wood Siding Material & Labor",amt:18000,allowance:false},
+        {code:"6113",desc:"Install Windows",amt:8272,allowance:false},
+        {code:"6115",desc:"Soffits and Pickup",amt:2600,allowance:false},
+        {code:"6200",desc:"Finish Carpentry",amt:10800,allowance:true},
+        {code:"6215",desc:"Hang Doors",amt:9667,allowance:false},
+        {code:"6400",desc:"Cabinets",amt:28928,allowance:true},
+      ]},
+      {name:"Division 7 — Thermal & Moisture", total:25671, items:[
+        {code:"7100",desc:"Waterproofing",amt:5096,allowance:false},
+        {code:"7200",desc:"Insulation",amt:3320,allowance:false},
+        {code:"7320",desc:"Roofing Shingles",amt:15360,allowance:false},
+        {code:"7600",desc:"Gutters and Downspouts",amt:1895,allowance:false},
+        {code:"7800",desc:"Skylights",amt:4199,allowance:false},
+      ]},
+      {name:"Division 8 — Doors & Windows", total:20525, items:[
+        {code:"8200",desc:"Doors",amt:7625,allowance:true},
+        {code:"8600",desc:"Windows",amt:8280,allowance:true},
+        {code:"8700",desc:"Finish Hardware",amt:850,allowance:true},
+        {code:"8710",desc:"Door Hardware",amt:3065,allowance:true},
+        {code:"8810",desc:"Mirrors",amt:705,allowance:true},
+      ]},
+      {name:"Division 9 — Finishes", total:39630, items:[
+        {code:"9250",desc:"Drywall",amt:18930,allowance:false},
+        {code:"9300",desc:"Tile",amt:8300,allowance:true},
+        {code:"9900",desc:"Painting",amt:12400,allowance:false},
+      ]},
+      {name:"Division 10 — Specialties", total:6740, items:[
+        {code:"10800",desc:"Toilet & Bath Accessories",amt:1340,allowance:true},
+        {code:"10822",desc:"Tub and Shower Enclosures",amt:4200,allowance:true},
+        {code:"10900",desc:"Closet Specialties",amt:1200,allowance:true},
+      ]},
+      {name:"Division 11 — Equipment", total:5000, items:[
+        {code:"11880",desc:"Equipment Rental",amt:5000,allowance:true},
+      ]},
+      {name:"Division 15 — Mechanical", total:42280, items:[
+        {code:"15400",desc:"Plumbing Services",amt:18000,allowance:false},
+        {code:"15401",desc:"Plumbing Fixtures",amt:5410,allowance:true},
+        {code:"15500",desc:"HVAC",amt:18870,allowance:true},
+      ]},
+      {name:"Division 16 — Electrical", total:27500, items:[
+        {code:"16400",desc:"Electrical Services",amt:27500,allowance:false},
+      ]},
+    ]
+  },
+  {
+    id:"reeve",
+    name:"2002 Reeve Residence",
+    type:"Custom Home — High-End",
+    sqft:2200, total:3639208.52, psf:1655, builderFee:12,
+    badge:"High",
+    description:"High-end custom home with complex sitework. Includes acoustic treatments, radiant heating, Tesla Powerwalls, and premium finishes throughout.",
+    divisions:[
+      {name:"Division 1 — General Requirements", total:251011, items:[
+        {code:"1040",desc:"Client Communications & Selection Development",amt:32256,allowance:true},
+        {code:"1045",desc:"Project Supervision",amt:141120,allowance:false},
+        {code:"1400",desc:"Energy Admin and Verification",amt:590,allowance:true},
+        {code:"1500",desc:"Construction Facilities",amt:1980,allowance:false},
+        {code:"1510",desc:"Temporary Utilities",amt:11425,allowance:false},
+        {code:"1512",desc:"General Labor",amt:28416,allowance:false},
+        {code:"1560",desc:"Construction Clean-up",amt:22200,allowance:false},
+        {code:"1565",desc:"Landfill / Dumpster Fees",amt:3600,allowance:false},
+        {code:"1640",desc:"Finish Protection",amt:1750,allowance:false},
+        {code:"1710",desc:"Finish Cleaning",amt:3450,allowance:false},
+      ]},
+      {name:"Division 2 — Sitework", total:413222, items:[
+        {code:"2025",desc:"Shoring",amt:24000,allowance:true},
+        {code:"2050",desc:"Demolition",amt:23779,allowance:false},
+        {code:"2210",desc:"Grading",amt:85704,allowance:false},
+        {code:"2270",desc:"Slope Protection & Erosion Control",amt:4572,allowance:false},
+        {code:"2500",desc:"Paving & Surfacing",amt:5550,allowance:true},
+        {code:"2665",desc:"Water Hook-up",amt:4243,allowance:false},
+        {code:"2720",desc:"Storm Drainage Controls",amt:68730,allowance:false},
+        {code:"2780",desc:"General Utilities",amt:45194,allowance:false},
+        {code:"2830",desc:"Fences and Gates",amt:45745,allowance:false},
+        {code:"2900",desc:"Landscaping",amt:105705,allowance:false},
+      ]},
+      {name:"Division 3 — Concrete", total:296160, items:[
+        {code:"3100",desc:"Structural Concrete",amt:216340,allowance:false},
+        {code:"3320",desc:"Flat Work - Patio Slabs, Pathways, Site Walls",amt:57660,allowance:false},
+        {code:"3350",desc:"Finished Concrete Floors",amt:22160,allowance:false},
+      ]},
+      {name:"Division 4 — Masonry", total:23500, items:[
+        {code:"4465",desc:"Granite Countertops",amt:23500,allowance:true},
+      ]},
+      {name:"Division 5 — Metals", total:117574, items:[
+        {code:"5050",desc:"Metal Framing",amt:20480,allowance:false},
+        {code:"5100",desc:"Structural Metal Framing",amt:89094,allowance:false},
+        {code:"5580",desc:"Sheetmetal",amt:8000,allowance:true},
+      ]},
+      {name:"Division 6 — Wood & Plastics", total:635099, items:[
+        {code:"6020",desc:"Structural Hardware",amt:5578,allowance:false},
+        {code:"6100",desc:"Wood Framing",amt:140500,allowance:false},
+        {code:"6110",desc:"Siding Materials",amt:146105,allowance:false},
+        {code:"6111",desc:"Siding Labor",amt:50280,allowance:false},
+        {code:"6115",desc:"Soffits and Pickup",amt:5000,allowance:false},
+        {code:"6200",desc:"Finish Carpentry",amt:36704,allowance:false},
+        {code:"6400",desc:"Cabinets",amt:222300,allowance:true},
+        {code:"6418",desc:"Wood Countertops",amt:28632,allowance:false},
+      ]},
+      {name:"Division 7 — Thermal & Moisture", total:112462, items:[
+        {code:"7100",desc:"Waterproofing",amt:14844,allowance:false},
+        {code:"7200",desc:"Insulation",amt:42000,allowance:false},
+        {code:"7350",desc:"Membrane Roofing",amt:30500,allowance:true},
+        {code:"7800",desc:"Skylights",amt:25118,allowance:false},
+      ]},
+      {name:"Division 8 — Doors & Windows", total:374966, items:[
+        {code:"8200",desc:"Doors",amt:94230,allowance:false},
+        {code:"8600",desc:"Windows & Like Doors",amt:268192,allowance:false},
+        {code:"8700",desc:"Finish Hardware",amt:1000,allowance:true},
+        {code:"8710",desc:"Door Hardware & Locksets",amt:2945,allowance:true},
+        {code:"8810",desc:"Mirrors",amt:8600,allowance:false},
+      ]},
+      {name:"Division 9 — Finishes", total:268680, items:[
+        {code:"9250",desc:"Drywall",amt:37940,allowance:false},
+        {code:"9300",desc:"Showers / Metal Plate Wall Treatments",amt:59200,allowance:true},
+        {code:"9500",desc:"Acoustic Treatments (Cloud Ceiling, Sound Isolation)",amt:156700,allowance:false},
+        {code:"9900",desc:"Painting",amt:14840,allowance:false},
+      ]},
+      {name:"Division 10 — Specialties", total:24265, items:[
+        {code:"10800",desc:"Bath Accessories",amt:16065,allowance:false},
+        {code:"10822",desc:"Shower Enclosures",amt:8200,allowance:true},
+      ]},
+      {name:"Division 11 — Equipment", total:55228, items:[
+        {code:"11200",desc:"Water Treatment Equipment",amt:4188,allowance:false},
+        {code:"11451",desc:"Appliances",amt:48540,allowance:true},
+        {code:"11880",desc:"Equipment Rental",amt:2500,allowance:false},
+      ]},
+      {name:"Division 12 — Furnishings", total:20228, items:[
+        {code:"12500",desc:"Window Treatments",amt:20228,allowance:false},
+      ]},
+      {name:"Division 13 — Special Construction", total:47308, items:[
+        {code:"13600",desc:"Solar Electric PV Systems",amt:40268,allowance:false},
+        {code:"13900",desc:"Fire Sprinkler System",amt:7040,allowance:false},
+      ]},
+      {name:"Division 15 — Mechanical", total:159299, items:[
+        {code:"15400",desc:"Plumbing Services",amt:44198,allowance:false},
+        {code:"15401",desc:"Plumbing Fixtures",amt:22850,allowance:false},
+        {code:"15500",desc:"HVAC",amt:50128,allowance:false},
+        {code:"15515",desc:"Radiant Heating",amt:42123,allowance:false},
+      ]},
+      {name:"Division 16 — Electrical", total:295563, items:[
+        {code:"16200",desc:"Tesla Power Walls",amt:34995,allowance:false},
+        {code:"16400",desc:"Electrical Services",amt:164288,allowance:false},
+        {code:"16401",desc:"Light Fixture Package",amt:45600,allowance:true},
+        {code:"16700",desc:"Low Voltage Systems / Electrical Controls",amt:50680,allowance:false},
+      ]},
+    ]
+  }
+];
+
+// ═══════════════════ HELPERS ═══════════════════
 function gd(k){return JSON.parse(localStorage.getItem(k)||'[]')}
 function sd(k,a){localStorage.setItem(k,JSON.stringify(a))}
-function uid(){return Date.now()+Math.random()}
-const $ = id => document.getElementById(id);
-const fc = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2}).format(n||0);
-const fp = n => ((n||0)*100).toFixed(1)+'%';
-const fd = s => s ? new Date(s+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
+const $=id=>document.getElementById(id);
+const fc=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2}).format(n||0);
+const fp=n=>((n||0)*100).toFixed(1)+'%';
+const fd=s=>{if(!s)return'—';const d=new Date(s+'T00:00:00');return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})};
 function ym(d){if(!d)return'';const dt=new Date(d+'T00:00:00');return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')}
 function curMonth(){const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')}
-function monthLabel(ym){const[y,m]=ym.split('-');const names=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return names[+m-1]+' '+y}
+function monthLabel(k){const[y,m]=k.split('-');return['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]+' '+y}
 
-// Apply CA fallbacks
 function applyCA(records){
   return records.map(r=>{
-    let rate=r.hourly_rate, hrs=r.avg_hrs, fb=false;
-    if(!rate){fb=true; rate=r.code==='01:1015'?175:r.code==='01:1045'?125:85}
+    let rate=r.hourly_rate,hrs=r.avg_hrs,fb=false;
+    if(!rate){fb=true;rate=r.code==='01:1015'?175:r.code==='01:1045'?125:85}
     if(!hrs&&r.avg_total&&rate){hrs=Math.round(r.avg_total/rate*10)/10;fb=true}
     return{...r,id:uid(),hourly_rate:rate,avg_hrs:hrs,ca_fallback:fb}
   })
 }
 
-// Init seeds
-if(!gd('rw_ip').length) sd('rw_ip', applyCA(CSI_SEED));
-if(!gd('rw_oh').length) sd('rw_oh', OH_SEED.map(r=>({...r,id:uid()})));
+if(!gd('rw_ip').length) sd('rw_ip',applyCA(CSI_SEED));
+if(!gd('rw_oh').length) sd('rw_oh',OH_SEED.map(r=>({...r,id:uid()})));
 
-// ═══════════════════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════════════════
+// ═══════════════════ NAVIGATION ═══════════════════
 function nav(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.sb-nav a').forEach(a=>a.classList.remove('active'));
   $('page-'+page).classList.add('active');
   $('nav-'+page).classList.add('active');
-  const renders={dashboard:renderDashboard,income:renderIncome,expenses:renderExpenses,assets:renderAssets,liabilities:renderLiabilities,overhead:renderOverhead,'ip-systems':renderIP,'financial-summary':renderFinancial,'new-project':initNewProject};
-  if(renders[page]) renders[page]();
+  const renders={
+    dashboard:renderDashboard,income:renderIncome,expenses:renderExpenses,
+    assets:renderAssets,liabilities:renderLiabilities,overhead:renderOverhead,
+    'ip-systems':renderIP,'financial-summary':renderFinancial,
+    'cost-reference':renderCostRef,'new-project':initNewProject
+  };
+  if(renders[page])renders[page]();
 }
 
-// ═══════════════════════════════════════════════════════
-// TOAST
-// ═══════════════════════════════════════════════════════
+function toggleSidebar(){
+  const sb=$('sidebar'),main=$('main');
+  sb.classList.toggle('collapsed');main.classList.toggle('collapsed');
+  localStorage.setItem('rw_sb',sb.classList.contains('collapsed')?'1':'0');
+}
+if(localStorage.getItem('rw_sb')==='1'){$('sidebar').classList.add('collapsed');$('main').classList.add('collapsed');}
+
 function toast(msg,type='success'){
   const t=$('toast'),ti=$('toast-inner');
-  ti.textContent=msg; ti.className='toast-inner toast-'+type;
-  t.style.display='block'; t.style.opacity='1';
+  ti.textContent=msg;ti.className='toast-inner toast-'+type;
+  t.style.display='block';t.style.opacity='1';
   setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.style.display='none',300)},2800);
 }
 
-// ═══════════════════════════════════════════════════════
-// DASHBOARD
-// ═══════════════════════════════════════════════════════
+// ═══════════════════ DASHBOARD ═══════════════════
 let revChart=null;
 function renderDashboard(){
   $('dash-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-  const income=gd('rw_income'), expenses=gd('rw_expenses'), assets=gd('rw_assets');
-  const liabilities=gd('rw_liabilities'), overhead=gd('rw_oh'), ip=gd('rw_ip');
+  const income=gd('rw_income'),expenses=gd('rw_expenses'),assets=gd('rw_assets'),liabilities=gd('rw_liabilities'),overhead=gd('rw_oh'),ip=gd('rw_ip');
   const cm=curMonth();
   const monthRev=income.filter(r=>r.payment_status==='Paid'&&ym(r.date)===cm).reduce((s,r)=>s+(+r.invoice_amount||0),0);
   const monthExp=expenses.filter(r=>ym(r.date)===cm).reduce((s,r)=>s+(+r.amount||0),0);
@@ -527,118 +1004,194 @@ function renderDashboard(){
   const burnRate=overhead.reduce((s,r)=>s+(+r.monthly_cost||0),0);
   const ipVal=ip.reduce((s,r)=>s+((+r.avg_hrs||0)*(+r.hourly_rate||0)),0);
 
-  function kpiCard(label,val,sub,cls=''){return`<div class="kpi-card ${cls}"><div class="kpi-label">${label}</div><div class="kpi-value ${cls}">${val}</div><div class="kpi-sub">${sub}</div></div>`}
-  $('kpi-row1').innerHTML=kpiCard('Monthly Revenue',fc(monthRev),'Paid invoices this month')+kpiCard('Monthly Expenses',fc(monthExp),'Total costs this month','neg')+kpiCard('Net Income',fc(netIncome),'Revenue minus expenses',netIncome>=0?'pos':'neg');
-  $('kpi-row2').innerHTML=kpiCard('Total Assets',fc(totalAssets),'From Asset Register')+kpiCard('Total Liabilities',fc(totalLiab),'From Liability Tracker','neg')+kpiCard('Est. Equity',fc(equity),'3× EBITDA estimate',equity>=0?'pos':'neg');
-  $('kpi-row3').innerHTML=kpiCard('Monthly Burn Rate',fc(burnRate),'Fixed overhead','neg')+kpiCard('Total IP Value',fc(ipVal),'Replacement cost of all systems')+kpiCard('Annual Overhead',fc(burnRate*12),'Total fixed costs per year','neg');
+  function kpi(label,val,sub,cls='',cardCls=''){
+    return`<div class="kpi-card ${cardCls}"><div class="kpi-label">${label}</div><div class="kpi-value ${cls}">${val}</div><div class="kpi-sub">${sub}</div></div>`;
+  }
+  $('kpi-row1').innerHTML=
+    kpi('Monthly Revenue',fc(monthRev),'Paid invoices this month','pos')+
+    kpi('Monthly Expenses',fc(monthExp),'Total costs this month','neg','red')+
+    kpi('Net Income',fc(netIncome),'Revenue minus expenses',netIncome>=0?'pos':'neg',netIncome<0?'red':'');
+  $('kpi-row2').innerHTML=
+    kpi('Total Assets',fc(totalAssets),'From Asset Register','pos')+
+    kpi('Total Liabilities',fc(totalLiab),'From Liability Tracker','neg','red')+
+    kpi('Est. Equity (3×EBITDA)',fc(equity),'Valuation estimate',equity>=0?'pos':'neg');
+  $('kpi-row3').innerHTML=
+    kpi('Monthly Burn Rate',fc(burnRate),'Fixed overhead','neg','red')+
+    kpi('Total IP Value',fc(ipVal),'Replacement cost of all systems','pos')+
+    kpi('Annual Overhead',fc(burnRate*12),'Total fixed costs per year','neg','red');
 
-  // Chart — last 12 months
-  const months=[];const revData=[];const expData=[];
-  for(let i=11;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');months.push(monthLabel(k));revData.push(income.filter(r=>r.payment_status==='Paid'&&ym(r.date)===k).reduce((s,r)=>s+(+r.invoice_amount||0),0));expData.push(expenses.filter(r=>ym(r.date)===k).reduce((s,r)=>s+(+r.amount||0),0));}
-  if(revChart) revChart.destroy();
-  revChart=new Chart($('revChart'),{type:'line',data:{labels:months,datasets:[{label:'Revenue',data:revData,borderColor:'#1A6A24',backgroundColor:'rgba(26,106,36,.08)',tension:.3,fill:true,pointRadius:3},{label:'Expenses',data:expData,borderColor:'#B71C1C',backgroundColor:'rgba(183,28,28,.06)',tension:.3,fill:true,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:11},padding:12}}},scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString(),font:{size:10}},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{font:{size:10}},grid:{display:false}}}}});
+  // Chart
+  const months=[],revData=[],expData=[];
+  for(let i=11;i>=0;i--){
+    const d=new Date();d.setMonth(d.getMonth()-i);
+    const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    months.push(monthLabel(k));
+    revData.push(income.filter(r=>r.payment_status==='Paid'&&ym(r.date)===k).reduce((s,r)=>s+(+r.invoice_amount||0),0));
+    expData.push(expenses.filter(r=>ym(r.date)===k).reduce((s,r)=>s+(+r.amount||0),0));
+  }
+  if(revChart)revChart.destroy();
+  revChart=new Chart($('revChart'),{type:'line',data:{labels:months,datasets:[
+    {label:'Revenue',data:revData,borderColor:'#1A6A24',backgroundColor:'rgba(26,106,36,.08)',tension:.3,fill:true,pointRadius:3},
+    {label:'Expenses',data:expData,borderColor:'#B71C1C',backgroundColor:'rgba(183,28,28,.06)',tension:.3,fill:true,pointRadius:3}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:10},padding:10}}},scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString(),font:{size:9}},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{font:{size:9}},grid:{display:false}}}}});
 
   // Outstanding
   const outstanding=income.filter(r=>r.payment_status==='Outstanding').sort((a,b)=>new Date(b.date)-new Date(a.date));
-  $('outstanding-body').innerHTML=outstanding.length?outstanding.map(r=>`<tr><td>${r.client_name||'—'}</td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.service_type||'—'}</td><td><strong>${fc(r.invoice_amount)}</strong></td><td>${fd(r.date)}</td><td><button class="btn btn-sm btn-primary" onclick="markPaid('${r.id}')">Mark Paid</button></td></tr>`).join(''):
-  '<tr><td colspan="5" class="empty-state"><p>No outstanding invoices</p></td></tr>';
+  $('outstanding-body').innerHTML=outstanding.length?outstanding.map(r=>`
+    <tr><td>${r.client_name||'—'}</td>
+    <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.service_type||'—'}</td>
+    <td><strong>${fc(r.invoice_amount)}</strong></td><td>${fd(r.date)}</td>
+    <td><button class="btn btn-sm btn-primary" onclick="markPaid('${r.id}')">Mark Paid</button></td></tr>`
+  ).join(''):'<tr><td colspan="5"><div class="empty-state">No outstanding invoices</div></td></tr>';
 
   // Activity
-  const acts=[...income.map(r=>({...r,_type:'Income',_desc:r.client_name,_amt:+r.invoice_amount})),...expenses.map(r=>({...r,_type:'Expense',_desc:r.vendor||r.category,_amt:+r.amount}))].sort((a,b)=>new Date(b.created_at||b.date)-new Date(a.created_at||a.date)).slice(0,8);
-  $('activity-body').innerHTML=acts.length?acts.map(r=>`<tr><td><span class="pill ${r._type==='Income'?'pill-paid':'pill-outstanding'}">${r._type}</span></td><td>${r._desc||'—'}</td><td><strong>${fc(r._amt)}</strong></td><td>${fd(r.date)}</td></tr>`).join(''):'<tr><td colspan="4" class="empty-state"><p>No recent activity</p></td></tr>';
+  const acts=[
+    ...income.map(r=>({...r,_type:'Income',_desc:r.client_name,_amt:+r.invoice_amount})),
+    ...expenses.map(r=>({...r,_type:'Expense',_desc:r.vendor||r.category,_amt:+r.amount}))
+  ].sort((a,b)=>new Date(b.created_at||b.date)-new Date(a.created_at||a.date)).slice(0,8);
+  $('activity-body').innerHTML=acts.length?acts.map(r=>`
+    <tr><td><span class="pill ${r._type==='Income'?'pill-paid':'pill-outstanding'}">${r._type}</span></td>
+    <td>${r._desc||'—'}</td><td><strong>${fc(r._amt)}</strong></td><td>${fd(r.date)}</td></tr>`
+  ).join(''):'<tr><td colspan="4"><div class="empty-state">No recent activity yet</div></td></tr>';
 }
 
 function markPaid(id){
-  const inc=gd('rw_income');const i=inc.findIndex(r=>String(r.id)===String(id));if(i<0)return;
-  inc[i].payment_status='Paid';sd('rw_income',inc);toast('Invoice marked as paid');renderDashboard();
+  const inc=gd('rw_income');const i=inc.findIndex(r=>String(r.id)===String(id));
+  if(i<0)return;inc[i].payment_status='Paid';sd('rw_income',inc);toast('Invoice marked as paid');renderDashboard();
 }
 
-// ═══════════════════════════════════════════════════════
-// INCOME
-// ═══════════════════════════════════════════════════════
+// ═══════════════════ INCOME ═══════════════════
 function renderIncome(){
   const all=gd('rw_income');
   const months=[...new Set(all.map(r=>ym(r.date)).filter(Boolean))].sort().reverse();
-  const mSel=$('inc-filter-month');const curMSel=mSel.value;
-  mSel.innerHTML='<option value="">All Months</option>'+months.map(m=>`<option value="${m}"${m===curMSel?' selected':''}>${monthLabel(m)}</option>`).join('');
-  const mf=mSel.value, sf=$('inc-filter-status').value, search=$('inc-search').value.toLowerCase();
+  const mSel=$('inc-filter-month');const cm2=mSel.value;
+  mSel.innerHTML='<option value="">All Months</option>'+months.map(m=>`<option value="${m}"${m===cm2?' selected':''}>${monthLabel(m)}</option>`).join('');
+  const mf=mSel.value,sf=$('inc-filter-status').value,search=$('inc-search').value.toLowerCase();
   const filtered=all.filter(r=>(!mf||ym(r.date)===mf)&&(!sf||r.payment_status===sf)&&(!search||((r.client_name||'').toLowerCase().includes(search))));
   const total=filtered.reduce((s,r)=>s+(+r.invoice_amount||0),0);
   const paid=filtered.filter(r=>r.payment_status==='Paid').reduce((s,r)=>s+(+r.invoice_amount||0),0);
-  $('income-summary').innerHTML=`<div class="summary-item"><label>Total Invoiced</label><span>${fc(total)}</span></div><div class="summary-item"><label>Paid</label><span class="pos">${fc(paid)}</span></div><div class="summary-item"><label>Outstanding</label><span class="neg">${fc(total-paid)}</span></div><div class="summary-item"><label>Records</label><span>${filtered.length}</span></div>`;
-  $('income-body').innerHTML=filtered.length?filtered.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(r=>`<tr><td>${fd(r.date)}</td><td>${r.client_name||'—'}</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.service_type||'—'}</td><td>${r.est_hours?r.est_hours.toFixed(1):'—'}</td><td>${r.hourly_rate?fc(r.hourly_rate):'—'}</td><td><strong>${fc(r.invoice_amount)}</strong></td><td><span class="pill pill-${(r.payment_status||'outstanding').toLowerCase()}">${r.payment_status||'Outstanding'}</span></td><td style="color:var(--txt2);font-size:12px">${r.notes||''}</td><td class="action-btns"><button class="btn btn-sm btn-outline" onclick="openModal('income','${r.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('rw_income','${r.id}',renderIncome)">Del</button></td></tr>`).join(''):'<tr><td colspan="9"><div class="empty-state"><p>No income records yet. Add your first project!</p></div></td></tr>';
+  $('income-summary').innerHTML=`
+    <div class="summary-item"><label>Total Invoiced</label><span>${fc(total)}</span></div>
+    <div class="summary-item"><label>Paid</label><span class="pos">${fc(paid)}</span></div>
+    <div class="summary-item"><label>Outstanding</label><span class="neg">${fc(total-paid)}</span></div>
+    <div class="summary-item"><label>Records</label><span>${filtered.length}</span></div>`;
+  $('income-body').innerHTML=filtered.length?filtered.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(r=>`
+    <tr><td>${fd(r.date)}</td><td>${r.client_name||'—'}</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.service_type||'—'}</td>
+    <td style="text-align:right">${r.est_hours?r.est_hours.toFixed(1):'—'}</td>
+    <td style="text-align:right">${r.hourly_rate?fc(r.hourly_rate):'—'}</td>
+    <td style="text-align:right"><strong>${fc(r.invoice_amount)}</strong></td>
+    <td><span class="pill pill-${(r.payment_status||'outstanding').toLowerCase()}">${r.payment_status||'Outstanding'}</span></td>
+    <td style="color:var(--txt2);font-size:11.5px;max-width:140px">${r.notes||''}</td>
+    <td class="action-btns"><button class="btn btn-sm btn-outline" onclick="openModal('income','${r.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('rw_income','${r.id}',renderIncome)">Del</button></td></tr>`
+  ).join(''):'<tr><td colspan="9"><div class="empty-state">No income records yet — add your first project!</div></td></tr>';
 }
 
-// ═══════════════════════════════════════════════════════
-// EXPENSES
-// ═══════════════════════════════════════════════════════
+// ═══════════════════ EXPENSES ═══════════════════
 function renderExpenses(){
   const all=gd('rw_expenses');
   const months=[...new Set(all.map(r=>ym(r.date)).filter(Boolean))].sort().reverse();
-  const mSel=$('exp-filter-month');const curMSel=mSel.value;
-  mSel.innerHTML='<option value="">All Months</option>'+months.map(m=>`<option value="${m}"${m===curMSel?' selected':''}>${monthLabel(m)}</option>`).join('');
-  const mf=mSel.value, cf=$('exp-filter-cat').value;
+  const mSel=$('exp-filter-month');const cm2=mSel.value;
+  mSel.innerHTML='<option value="">All Months</option>'+months.map(m=>`<option value="${m}"${m===cm2?' selected':''}>${monthLabel(m)}</option>`).join('');
+  const mf=mSel.value,cf=$('exp-filter-cat').value;
   const filtered=all.filter(r=>(!mf||ym(r.date)===mf)&&(!cf||r.category===cf));
   const total=filtered.reduce((s,r)=>s+(+r.amount||0),0);
-  const cm=curMonth();const monthTotal=all.filter(r=>ym(r.date)===cm).reduce((s,r)=>s+(+r.amount||0),0);
-  const ytd=new Date().getFullYear();const ytdTotal=all.filter(r=>r.date&&r.date.startsWith(ytd)).reduce((s,r)=>s+(+r.amount||0),0);
-  $('expense-summary').innerHTML=`<div class="summary-item"><label>Filtered Total</label><span class="neg">${fc(total)}</span></div><div class="summary-item"><label>This Month</label><span class="neg">${fc(monthTotal)}</span></div><div class="summary-item"><label>YTD Total</label><span class="neg">${fc(ytdTotal)}</span></div>`;
-  $('expense-body').innerHTML=filtered.length?filtered.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(r=>`<tr><td>${fd(r.date)}</td><td>${r.category||'—'}</td><td>${r.vendor||'—'}</td><td><strong>${fc(r.amount)}</strong></td><td>${r.payment_method||'—'}</td><td style="color:var(--txt2);font-size:12px">${r.notes||''}</td><td class="action-btns"><button class="btn btn-sm btn-outline" onclick="openModal('expense','${r.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('rw_expenses','${r.id}',renderExpenses)">Del</button></td></tr>`).join(''):'<tr><td colspan="7"><div class="empty-state"><p>No expense records yet.</p></div></td></tr>';
+  const cm=curMonth();
+  const monthTotal=all.filter(r=>ym(r.date)===cm).reduce((s,r)=>s+(+r.amount||0),0);
+  const yr=new Date().getFullYear();
+  const ytdTotal=all.filter(r=>r.date&&r.date.startsWith(yr)).reduce((s,r)=>s+(+r.amount||0),0);
+  $('expense-summary').innerHTML=`
+    <div class="summary-item"><label>Filtered Total</label><span class="neg">${fc(total)}</span></div>
+    <div class="summary-item"><label>This Month</label><span class="neg">${fc(monthTotal)}</span></div>
+    <div class="summary-item"><label>YTD Total</label><span class="neg">${fc(ytdTotal)}</span></div>`;
+  $('expense-body').innerHTML=filtered.length?filtered.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(r=>`
+    <tr><td>${fd(r.date)}</td><td>${r.category||'—'}</td><td>${r.vendor||'—'}</td>
+    <td style="text-align:right"><strong>${fc(r.amount)}</strong></td>
+    <td>${r.payment_method||'—'}</td>
+    <td style="color:var(--txt2);font-size:11.5px">${r.notes||''}</td>
+    <td class="action-btns"><button class="btn btn-sm btn-outline" onclick="openModal('expense','${r.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('rw_expenses','${r.id}',renderExpenses)">Del</button></td></tr>`
+  ).join(''):'<tr><td colspan="7"><div class="empty-state">No expense records yet.</div></td></tr>';
 }
 
-// ═══════════════════════════════════════════════════════
-// ASSETS
-// ═══════════════════════════════════════════════════════
+// ═══════════════════ ASSETS ═══════════════════
 function renderAssets(){
   const all=gd('rw_assets');
   const totalPurch=all.reduce((s,r)=>s+(+r.purchase_cost||0),0);
   const totalVal=all.reduce((s,r)=>s+(+r.current_value||0),0);
-  const totalDepr=all.reduce((s,r)=>s+((+r.purchase_cost||0)-(+r.current_value||0)),0);
-  $('asset-summary').innerHTML=`<div class="summary-item"><label>Total Purchase Cost</label><span>${fc(totalPurch)}</span></div><div class="summary-item"><label>Total Current Value</label><span class="pos">${fc(totalVal)}</span></div><div class="summary-item"><label>Total Depreciation</label><span class="neg">${fc(totalDepr)}</span></div><div class="summary-item"><label>Assets</label><span>${all.length}</span></div>`;
-  $('asset-body').innerHTML=all.length?all.map(r=>{const d=+r.useful_life_years>0?((+r.purchase_cost||0)-(+r.current_value||0))/(+r.useful_life_years):0;return`<tr><td><strong>${r.asset_name||'—'}</strong></td><td>${r.category||'—'}</td><td style="color:var(--txt2);font-size:12px">${r.description||''}</td><td>${fc(r.purchase_cost)}</td><td>${fc(r.current_value)}</td><td>${fd(r.date_acquired)}</td><td>${r.useful_life_years||'—'} yrs</td><td>${d>0?fc(d):'—'}</td><td class="action-btns"><button class="btn btn-sm btn-outline" onclick="openModal('asset','${r.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('rw_assets','${r.id}',renderAssets)">Del</button></td></tr>`}).join(''):'<tr><td colspan="9"><div class="empty-state"><p>No assets recorded yet.</p></div></td></tr>';
+  $('asset-summary').innerHTML=`
+    <div class="summary-item"><label>Total Purchase Cost</label><span>${fc(totalPurch)}</span></div>
+    <div class="summary-item"><label>Total Current Value</label><span class="pos">${fc(totalVal)}</span></div>
+    <div class="summary-item"><label>Total Depreciation</label><span class="neg">${fc(totalPurch-totalVal)}</span></div>
+    <div class="summary-item"><label>Assets</label><span>${all.length}</span></div>`;
+  $('asset-body').innerHTML=all.length?all.map(r=>{
+    const d=+r.useful_life_years>0?((+r.purchase_cost||0)-(+r.current_value||0))/(+r.useful_life_years):0;
+    return`<tr><td><strong>${r.asset_name||'—'}</strong></td><td>${r.category||'—'}</td>
+      <td style="color:var(--txt2);font-size:11.5px">${r.description||''}</td>
+      <td style="text-align:right">${fc(r.purchase_cost)}</td><td style="text-align:right">${fc(r.current_value)}</td>
+      <td>${fd(r.date_acquired)}</td><td style="text-align:right">${r.useful_life_years||'—'} yrs</td>
+      <td style="text-align:right">${d>0?fc(d):'—'}</td>
+      <td class="action-btns"><button class="btn btn-sm btn-outline" onclick="openModal('asset','${r.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('rw_assets','${r.id}',renderAssets)">Del</button></td></tr>`;
+  }).join(''):'<tr><td colspan="9"><div class="empty-state">No assets recorded yet.</div></td></tr>';
 }
 
-// ═══════════════════════════════════════════════════════
-// LIABILITIES
-// ═══════════════════════════════════════════════════════
+// ═══════════════════ LIABILITIES ═══════════════════
 function renderLiabilities(){
   const all=gd('rw_liabilities');
   const totalBal=all.reduce((s,r)=>s+(+r.balance||0),0);
   const totalPmt=all.reduce((s,r)=>s+(+r.monthly_payment||0),0);
   const totalInt=all.reduce((s,r)=>s+((+r.balance||0)*(+r.interest_rate||0)),0);
-  $('liability-summary').innerHTML=`<div class="summary-item"><label>Total Balance</label><span class="neg">${fc(totalBal)}</span></div><div class="summary-item"><label>Monthly Payment</label><span class="neg">${fc(totalPmt)}</span></div><div class="summary-item"><label>Annual Interest</label><span class="neg">${fc(totalInt)}</span></div>`;
-  $('liability-body').innerHTML=all.length?all.map(r=>`<tr><td><strong>${r.creditor||'—'}</strong></td><td>${r.type||'—'}</td><td>${fc(r.balance)}</td><td>${((+r.interest_rate||0)*100).toFixed(2)}%</td><td>${fc(r.monthly_payment)}</td><td>${fd(r.maturity_date)}</td><td>${fc((+r.balance||0)*(+r.interest_rate||0))}</td><td style="color:var(--txt2);font-size:12px">${r.notes||''}</td><td class="action-btns"><button class="btn btn-sm btn-outline" onclick="openModal('liability','${r.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('rw_liabilities','${r.id}',renderLiabilities)">Del</button></td></tr>`).join(''):'<tr><td colspan="9"><div class="empty-state"><p>No liabilities recorded.</p></div></td></tr>';
+  $('liability-summary').innerHTML=`
+    <div class="summary-item"><label>Total Balance</label><span class="neg">${fc(totalBal)}</span></div>
+    <div class="summary-item"><label>Monthly Payment</label><span class="neg">${fc(totalPmt)}</span></div>
+    <div class="summary-item"><label>Annual Interest</label><span class="neg">${fc(totalInt)}</span></div>`;
+  $('liability-body').innerHTML=all.length?all.map(r=>`
+    <tr><td><strong>${r.creditor||'—'}</strong></td><td>${r.type||'—'}</td>
+    <td style="text-align:right">${fc(r.balance)}</td>
+    <td style="text-align:right">${((+r.interest_rate||0)*100).toFixed(2)}%</td>
+    <td style="text-align:right">${fc(r.monthly_payment)}</td>
+    <td>${fd(r.maturity_date)}</td>
+    <td style="text-align:right">${fc((+r.balance||0)*(+r.interest_rate||0))}</td>
+    <td style="color:var(--txt2);font-size:11.5px">${r.notes||''}</td>
+    <td class="action-btns"><button class="btn btn-sm btn-outline" onclick="openModal('liability','${r.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('rw_liabilities','${r.id}',renderLiabilities)">Del</button></td></tr>`
+  ).join(''):'<tr><td colspan="9"><div class="empty-state">No liabilities recorded.</div></td></tr>';
 }
 
-// ═══════════════════════════════════════════════════════
-// OVERHEAD
-// ═══════════════════════════════════════════════════════
+// ═══════════════════ OVERHEAD ═══════════════════
 function renderOverhead(){
   const all=gd('rw_oh');
   const total=all.reduce((s,r)=>s+(+r.monthly_cost||0),0);
-  $('overhead-summary').innerHTML=`<div class="summary-item"><label>Monthly Overhead</label><span class="neg">${fc(total)}</span></div><div class="summary-item"><label>Annual Overhead</label><span class="neg">${fc(total*12)}</span></div>`;
+  $('overhead-summary').innerHTML=`
+    <div class="summary-item"><label>Monthly Overhead</label><span class="neg">${fc(total)}</span></div>
+    <div class="summary-item"><label>Annual Overhead</label><span class="neg">${fc(total*12)}</span></div>`;
   const groups=[...new Set(all.map(r=>r.category))];
   let html='';
   groups.forEach(g=>{
     const rows=all.filter(r=>r.category===g);
     const sub=rows.reduce((s,r)=>s+(+r.monthly_cost||0),0);
-    html+=`<tr><td colspan="5" class="oh-group-header">${g} — ${fc(sub)}/mo</td></tr>`;
-    rows.forEach(r=>{html+=`<tr><td style="padding-left:28px;color:var(--txt2);font-size:12px">${r.category}</td><td>${r.item}</td><td><input class="inline-edit" type="number" value="${r.monthly_cost||0}" onchange="updateOverhead('${r.id}',this.value)" /></td><td>${fc((+r.monthly_cost||0)*12)}</td><td style="color:var(--txt2);font-size:12px">${r.vendor_notes||''}</td></tr>`});
+    html+=`<tr><td colspan="5" class="oh-cat-header">${g} &mdash; ${fc(sub)}/mo</td></tr>`;
+    rows.forEach(r=>{
+      html+=`<tr>
+        <td style="padding-left:24px;color:var(--txt2);font-size:11.5px">${r.category}</td>
+        <td>${r.item}</td>
+        <td style="text-align:right"><input class="inline-edit" type="number" value="${r.monthly_cost||0}" onchange="updateOverhead('${r.id}',this.value)"/></td>
+        <td style="text-align:right">${fc((+r.monthly_cost||0)*12)}</td>
+        <td style="color:var(--txt2);font-size:11.5px">${r.vendor_notes||''}</td></tr>`;
+    });
   });
   $('overhead-body').innerHTML=html;
-  $('overhead-foot').innerHTML=`<tr style="background:var(--dg);color:#fff"><td colspan="2" style="padding:10px 14px;font-weight:500">TOTAL</td><td style="padding:10px 14px;font-weight:500">${fc(total)}/mo</td><td style="padding:10px 14px;font-weight:500">${fc(total*12)}/yr</td><td></td></tr>`;
+  $('overhead-foot').innerHTML=`<tr><td colspan="2">TOTAL</td><td style="text-align:right">${fc(total)}/mo</td><td style="text-align:right">${fc(total*12)}/yr</td><td></td></tr>`;
 }
 function updateOverhead(id,val){
   const all=gd('rw_oh');const i=all.findIndex(r=>String(r.id)===String(id));
   if(i<0)return;all[i].monthly_cost=+val;sd('rw_oh',all);
   const total=all.reduce((s,r)=>s+(+r.monthly_cost||0),0);
-  $('overhead-summary').innerHTML=`<div class="summary-item"><label>Monthly Overhead</label><span class="neg">${fc(total)}</span></div><div class="summary-item"><label>Annual Overhead</label><span class="neg">${fc(total*12)}</span></div>`;
+  $('overhead-summary').innerHTML=`
+    <div class="summary-item"><label>Monthly Overhead</label><span class="neg">${fc(total)}</span></div>
+    <div class="summary-item"><label>Annual Overhead</label><span class="neg">${fc(total*12)}</span></div>`;
   toast('Updated');
 }
 
-// ═══════════════════════════════════════════════════════
-// IP SYSTEMS
-// ═══════════════════════════════════════════════════════
+// ═══════════════════ IP SYSTEMS ═══════════════════
 function renderIP(){
   const all=gd('rw_ip');
   const divs=[...new Set(all.map(r=>r.division))].sort();
@@ -647,9 +1200,21 @@ function renderIP(){
   const df=dSel.value;
   const filtered=all.filter(r=>!df||r.division===df);
   const total=filtered.reduce((s,r)=>s+((+r.avg_hrs||0)*(+r.hourly_rate||0)),0);
-  const avg=filtered.length?total/filtered.length:0;
-  $('ip-summary').innerHTML=`<div class="summary-item"><label>Total IP Value</label><span class="pos">${fc(total)}</span></div><div class="summary-item"><label>Systems</label><span>${filtered.length}</span></div><div class="summary-item"><label>Avg Replacement</label><span>${fc(avg)}</span></div>`;
-  $('ip-body').innerHTML=filtered.map(r=>{const rc=(+r.avg_hrs||0)*(+r.hourly_rate||0);return`<tr><td style="font-family:monospace;font-size:12px">${r.code}</td><td>${r.name}</td><td>${r.division}</td><td>${r.avg_hrs?r.avg_hrs.toFixed(1):'—'} ${r.ca_fallback?'<span class="pill pill-ca">CA Avg</span>':''}</td><td>${fc(r.hourly_rate)} ${r.ca_fallback?'<span class="pill pill-ca">CA Avg</span>':''}</td><td><strong>${fc(rc)}</strong></td><td>${r.ca_fallback?'CA Average':'Historical Data'}</td><td><button class="btn btn-sm btn-outline" onclick="editIP('${r.id}')">Edit Rate</button></td></tr>`}).join('');
+  $('ip-summary').innerHTML=`
+    <div class="summary-item"><label>Total IP Value</label><span class="pos">${fc(total)}</span></div>
+    <div class="summary-item"><label>Systems</label><span>${filtered.length}</span></div>
+    <div class="summary-item"><label>Avg Replacement</label><span>${fc(filtered.length?total/filtered.length:0)}</span></div>`;
+  $('ip-body').innerHTML=filtered.map(r=>{
+    const rc=(+r.avg_hrs||0)*(+r.hourly_rate||0);
+    return`<tr>
+      <td style="font-family:monospace;font-size:11px">${r.code}</td>
+      <td>${r.name}</td><td>${r.division}</td>
+      <td style="text-align:right">${r.avg_hrs?r.avg_hrs.toFixed(1):'—'}${r.ca_fallback?' <span class="pill pill-ca">CA</span>':''}</td>
+      <td style="text-align:right">${fc(r.hourly_rate)}${r.ca_fallback?' <span class="pill pill-ca">CA</span>':''}</td>
+      <td style="text-align:right"><strong>${fc(rc)}</strong></td>
+      <td style="font-size:11px">${r.ca_fallback?'CA Average':'Historical'}</td>
+      <td><button class="btn btn-sm btn-outline" onclick="editIP('${r.id}')">Edit</button></td></tr>`;
+  }).join('');
 }
 function editIP(id){
   const all=gd('rw_ip');const r=all.find(x=>String(x.id)===String(id));if(!r)return;
@@ -659,187 +1224,561 @@ function editIP(id){
   sd('rw_ip',all);toast('Updated');renderIP();
 }
 
-// ═══════════════════════════════════════════════════════
-// FINANCIAL SUMMARY
-// ═══════════════════════════════════════════════════════
+// ═══════════════════ COST REFERENCE ═══════════════════
+function renderCostRef(){
+  const container=$('cost-ref-projects');
+  container.innerHTML=PROJECTS.map(p=>{
+    const badgeCls=p.badge==='Low'?'pill-low':p.badge==='Mid'?'pill-mid':'pill-high';
+    const divHtml=p.divisions.map((d,di)=>{
+      const itemsHtml=d.items.map(item=>`
+        <div class="line-item-row">
+          <span class="line-item-code">${item.code}</span>
+          <span class="line-item-desc">${item.desc}${item.allowance?'<span class="allowance-tag">ALLOWANCE</span>':''}</span>
+          <span class="line-item-amt">${fc(item.amt)}</span>
+        </div>`).join('');
+      return`
+        <div class="division-group">
+          <div class="division-header" onclick="toggleDiv('div-${p.id}-${di}')">
+            <span>${d.name}</span>
+            <span>${fc(d.total)}</span>
+          </div>
+          <div class="line-items" id="div-${p.id}-${di}">${itemsHtml}</div>
+        </div>`;
+    }).join('');
+    return`
+      <div class="project-card">
+        <div class="project-card-header">
+          <h3>${p.name}</h3>
+          <span class="pill ${badgeCls}">${p.badge} &mdash; $${p.psf}/SF</span>
+        </div>
+        <div class="project-meta">
+          <span><strong>${p.sqft.toLocaleString()} SF</strong></span>
+          <span>Total: <strong>${fc(p.total)}</strong></span>
+          <span>Builder Fee: <strong>${p.builderFee}%</strong></span>
+          <span style="flex:1;color:var(--txt2)">${p.description}</span>
+        </div>
+        ${divHtml}
+        <div style="padding:10px 18px;background:var(--pg);display:flex;justify-content:space-between;font-size:12.5px;font-weight:500">
+          <span>TOTAL CONTRACT</span><span style="color:var(--dg)">${fc(p.total)}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+function toggleDiv(id){
+  const el=$(id);el.classList.toggle('open');
+}
+
+// ═══════════════════ FINANCIAL SUMMARY ═══════════════════
 function renderFinancial(){
   const income=gd('rw_income'),expenses=gd('rw_expenses'),overhead=gd('rw_oh');
   const burn=overhead.reduce((s,r)=>s+(+r.monthly_cost||0),0);
   const yr=new Date().getFullYear();
   const months=['01','02','03','04','05','06','07','08','09','10','11','12'];
-  let ytdRev=0,ytdExp=0,ytdNet=0,ytdOut=0;
-  let rows='',totalRev=0,totalExp=0;
+  let ytdRev=0,ytdExp=0,ytdNet=0,ytdOut=0,rows='',totalRev=0,totalExp=0;
   months.forEach((m,i)=>{
-    const key=yr+'-'+m;const lbl=monthLabel(key);
+    const key=yr+'-'+m,lbl=monthLabel(key),mn=i+1;
     const rev=income.filter(r=>r.payment_status==='Paid'&&ym(r.date)===key).reduce((s,r)=>s+(+r.invoice_amount||0),0);
     const exp=expenses.filter(r=>ym(r.date)===key).reduce((s,r)=>s+(+r.amount||0),0);
     const out=income.filter(r=>r.payment_status==='Outstanding'&&ym(r.date)===key).reduce((s,r)=>s+(+r.invoice_amount||0),0);
-    const net=rev-exp; const mg=rev>0?net/rev:0;
+    const net=rev-exp;
     ytdRev+=rev;ytdExp+=exp;ytdNet+=net;ytdOut+=out;totalRev+=rev;totalExp+=exp;
-    const cov=burn>0?rev/burn:0;
-    rows+=`<tr><td style="font-weight:500">${lbl}</td><td>${rev>0?fc(rev):'—'}</td><td>${exp>0?fc(exp):'—'}</td><td class="${net>0?'fin-pos':net<0?'fin-neg':''}">${rev||exp?fc(net):'—'}</td><td>${rev>0?fp(mg):'—'}</td><td>${out>0?'<span class="fin-neg">'+fc(out)+'</span>':'—'}</td><td>${fc(ytdRev)}</td><td class="${ytdNet>0?'fin-pos':ytdNet<0?'fin-neg':''}">${fc(ytdNet)}</td><td>${burn>0&&rev>0?(cov.toFixed(1)+'x'):'—'}</td></tr>`;
+    const cov=burn>0&&rev>0?(rev/burn).toFixed(1)+'x':'—';
+    rows+=`<tr>
+      <td style="font-weight:500">${lbl}</td>
+      <td style="text-align:right">${rev>0?fc(rev):'—'}</td>
+      <td style="text-align:right">${exp>0?fc(exp):'—'}</td>
+      <td style="text-align:right" class="${net>0?'fin-pos':net<0?'fin-neg':''}">${rev||exp?fc(net):'—'}</td>
+      <td style="text-align:right">${rev>0?fp(rev>0?net/rev:0):'—'}</td>
+      <td style="text-align:right">${out>0?'<span class="fin-neg">'+fc(out)+'</span>':'—'}</td>
+      <td style="text-align:right">${fc(ytdRev)}</td>
+      <td style="text-align:right" class="${ytdNet>0?'fin-pos':ytdNet<0?'fin-neg':''}">${fc(ytdNet)}</td>
+      <td style="text-align:right">${cov}</td></tr>`;
   });
   const ytdMg=ytdRev>0?ytdNet/ytdRev:0;
-  $('fin-summary').innerHTML=`<div class="summary-item"><label>YTD Revenue</label><span class="pos">${fc(ytdRev)}</span></div><div class="summary-item"><label>YTD Expenses</label><span class="neg">${fc(ytdExp)}</span></div><div class="summary-item"><label>YTD Net Income</label><span class="${ytdNet>=0?'pos':'neg'}">${fc(ytdNet)}</span></div><div class="summary-item"><label>YTD Margin</label><span>${fp(ytdMg)}</span></div><div class="summary-item"><label>Outstanding</label><span class="neg">${fc(ytdOut)}</span></div>`;
+  $('fin-summary').innerHTML=`
+    <div class="summary-item"><label>YTD Revenue</label><span class="pos">${fc(ytdRev)}</span></div>
+    <div class="summary-item"><label>YTD Expenses</label><span class="neg">${fc(ytdExp)}</span></div>
+    <div class="summary-item"><label>YTD Net Income</label><span class="${ytdNet>=0?'pos':'neg'}">${fc(ytdNet)}</span></div>
+    <div class="summary-item"><label>YTD Margin</label><span>${fp(ytdMg)}</span></div>
+    <div class="summary-item"><label>Outstanding</label><span class="neg">${fc(ytdOut)}</span></div>`;
   $('fin-body').innerHTML=rows;
-  $('fin-foot').innerHTML=`<tr style="background:var(--dg);color:#fff"><td style="padding:10px 14px;font-weight:500">TOTALS</td><td style="padding:10px 14px">${fc(totalRev)}</td><td style="padding:10px 14px">${fc(totalExp)}</td><td style="padding:10px 14px">${fc(totalRev-totalExp)}</td><td style="padding:10px 14px">${totalRev>0?fp((totalRev-totalExp)/totalRev):'—'}</td><td colspan="4"></td></tr>`;
+  $('fin-foot').innerHTML=`<td>ANNUAL TOTALS</td><td style="text-align:right">${fc(totalRev)}</td><td style="text-align:right">${fc(totalExp)}</td><td style="text-align:right">${fc(totalRev-totalExp)}</td><td style="text-align:right">${totalRev>0?fp((totalRev-totalExp)/totalRev):'—'}</td><td colspan="4"></td>`;
 }
 function exportCSV(){
   const income=gd('rw_income'),expenses=gd('rw_expenses'),overhead=gd('rw_oh');
   const burn=overhead.reduce((s,r)=>s+(+r.monthly_cost||0),0);
   const yr=new Date().getFullYear();
-  const months=['01','02','03','04','05','06','07','08','09','10','11','12'];
   let csv='Month,Revenue,Expenses,Net Income,Margin %,Outstanding,Cumulative Revenue,YTD Net,Burn Coverage\n';
   let ytdRev=0,ytdNet=0;
-  months.forEach(m=>{
-    const key=yr+'-'+m;const lbl=monthLabel(key);
+  ['01','02','03','04','05','06','07','08','09','10','11','12'].forEach(m=>{
+    const key=yr+'-'+m;
     const rev=income.filter(r=>r.payment_status==='Paid'&&ym(r.date)===key).reduce((s,r)=>s+(+r.invoice_amount||0),0);
     const exp=expenses.filter(r=>ym(r.date)===key).reduce((s,r)=>s+(+r.amount||0),0);
     const out=income.filter(r=>r.payment_status==='Outstanding'&&ym(r.date)===key).reduce((s,r)=>s+(+r.invoice_amount||0),0);
     const net=rev-exp;ytdRev+=rev;ytdNet+=net;
-    csv+=`${lbl},${rev.toFixed(2)},${exp.toFixed(2)},${net.toFixed(2)},${rev>0?((net/rev)*100).toFixed(1)+'%':''},${out.toFixed(2)},${ytdRev.toFixed(2)},${ytdNet.toFixed(2)},${burn>0&&rev>0?(rev/burn).toFixed(1)+'x':''}\n`;
+    csv+=`${monthLabel(key)},${rev.toFixed(2)},${exp.toFixed(2)},${net.toFixed(2)},${rev>0?((net/rev)*100).toFixed(1)+'%':''},${out.toFixed(2)},${ytdRev.toFixed(2)},${ytdNet.toFixed(2)},${burn>0&&rev>0?(rev/burn).toFixed(1)+'x':''}\n`;
   });
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='romaine-financial-'+yr+'.csv';a.click();
 }
 
-// ═══════════════════════════════════════════════════════
-// MODAL SYSTEM
-// ═══════════════════════════════════════════════════════
-let _modalType='',_modalId=null,_modalCallback=null;
+// ═══════════════════ MODAL ═══════════════════
+let _modalType='',_modalId=null;
 function openModal(type,id){
   _modalType=type;_modalId=id||null;
-  const overlay=$('modal-overlay'),title=$('modal-title'),body=$('modal-body'),saveBtn=$('modal-save-btn');
   const ip=gd('rw_ip');
-  const svcOptions=ip.map(r=>`<option value="${r.code}|${r.name}|${r.avg_hrs}|${r.hourly_rate}">${r.division} — ${r.name}</option>`).join('');
+  const svcOptions=ip.map(r=>`<option value="${r.code}|${r.name}|${r.avg_hrs}|${r.hourly_rate}|${r.ca_fallback?1:0}">${r.division} — ${r.name}</option>`).join('');
   let rec={};
-  if(id){
-    const key={income:'rw_income',expense:'rw_expenses',asset:'rw_assets',liability:'rw_liabilities'}[type];
-    if(key) rec=gd(key).find(r=>String(r.id)===String(id))||{};
-  }
+  if(id){const key={income:'rw_income',expense:'rw_expenses',asset:'rw_assets',liability:'rw_liabilities'}[type];if(key)rec=gd(key).find(r=>String(r.id)===String(id))||{};}
   const v=k=>rec[k]||'';
-  const selected=k=>v(k)?`selected value="${v(k)}"`:'' ;
   if(type==='income'){
-    title.textContent=id?'Edit Income':'Add Income';
-    body.innerHTML=`<div class="form-grid"><div class="form-row"><label>Date</label><input id="m-date" type="date" value="${v('date')}" /></div><div class="form-row"><label>Client Name</label><input id="m-client" value="${v('client_name')}" /></div></div><div class="form-row"><label>Service Type</label><select id="m-svc" onchange="modalServiceSelect()">${svcOptions}</select></div><div id="m-ca-banner" class="ca-banner" style="display:none">Rate/hours based on California state average.</div><div class="form-grid"><div class="form-row"><label>Est. Hours</label><input id="m-hrs" type="number" step="0.5" value="${v('est_hours')}" oninput="modalCalc()" /></div><div class="form-row"><label>Hourly Rate ($)</label><input id="m-rate" type="number" step="0.01" value="${v('hourly_rate')}" oninput="modalCalc()" /></div></div><div class="form-row"><label>Invoice Amount</label><input id="m-inv" type="number" step="0.01" value="${v('invoice_amount')}" /></div><div class="form-row"><label>Payment Status</label><select id="m-status"><option${v('payment_status')==='Outstanding'?' selected':''}>Outstanding</option><option${v('payment_status')==='Paid'?' selected':''}>Paid</option><option${v('payment_status')==='Partial'?' selected':''}>Partial</option></select></div><div class="form-row"><label>Notes</label><input id="m-notes" value="${v('notes')}" /></div>`;
-    saveBtn.onclick=()=>saveIncome();
+    $('modal-title').textContent=id?'Edit Income':'Add Income';
+    $('modal-body').innerHTML=`
+      <div class="form-grid">
+        <div class="form-row"><label>Date</label><input id="m-date" type="date" value="${v('date')}"/></div>
+        <div class="form-row"><label>Client Name</label><input id="m-client" value="${v('client_name')}"/></div>
+      </div>
+      <div class="form-row"><label>Service Type</label><select id="m-svc" onchange="modalSvcSelect()">${svcOptions}</select></div>
+      <div id="m-ca-banner" class="ca-banner" style="display:none">Rate/hours based on California state average.</div>
+      <div class="form-grid">
+        <div class="form-row"><label>Est. Hours</label><input id="m-hrs" type="number" step="0.5" value="${v('est_hours')}" oninput="modalCalc()"/></div>
+        <div class="form-row"><label>Hourly Rate ($)</label><input id="m-rate" type="number" step="0.01" value="${v('hourly_rate')}" oninput="modalCalc()"/></div>
+      </div>
+      <div class="form-row"><label>Invoice Amount ($)</label><input id="m-inv" type="number" step="0.01" value="${v('invoice_amount')}"/></div>
+      <div class="form-row"><label>Payment Status</label>
+        <select id="m-status">
+          <option${v('payment_status')==='Outstanding'?' selected':''}>Outstanding</option>
+          <option${v('payment_status')==='Paid'?' selected':''}>Paid</option>
+          <option${v('payment_status')==='Partial'?' selected':''}>Partial</option>
+        </select>
+      </div>
+      <div class="form-row"><label>Notes</label><input id="m-notes" value="${v('notes')}"/></div>`;
+    $('modal-save-btn').onclick=saveIncome;
   } else if(type==='expense'){
-    title.textContent=id?'Edit Expense':'Add Expense';
-    body.innerHTML=`<div class="form-grid"><div class="form-row"><label>Date</label><input id="m-date" type="date" value="${v('date')}" /></div><div class="form-row"><label>Vendor</label><input id="m-vendor" value="${v('vendor')}" /></div></div><div class="form-row"><label>Category</label><select id="m-cat"><option${v('category')==='Software'?' selected':''}>Software</option><option${v('category')==='Rent/Office'?' selected':''}>Rent/Office</option><option${v('category')==='Insurance'?' selected':''}>Insurance</option><option${v('category')==='Marketing'?' selected':''}>Marketing</option><option${v('category')==='Payroll'?' selected':''}>Payroll</option><option${v('category')==='Materials'?' selected':''}>Materials</option><option${v('category')==='Subcontractor'?' selected':''}>Subcontractor</option><option${v('category')==='Travel'?' selected':''}>Travel</option><option${v('category')==='Utilities'?' selected':''}>Utilities</option><option${v('category')==='Misc'?' selected':''}>Misc</option></select></div><div class="form-row"><label>Amount ($)</label><input id="m-amount" type="number" step="0.01" value="${v('amount')}" /></div><div class="form-row"><label>Payment Method</label><select id="m-method"><option>Credit Card</option><option>Check</option><option>ACH</option><option>Cash</option><option>Wire</option></select></div><div class="form-row"><label>Notes</label><input id="m-notes" value="${v('notes')}" /></div>`;
-    saveBtn.onclick=()=>saveExpense();
+    $('modal-title').textContent=id?'Edit Expense':'Add Expense';
+    $('modal-body').innerHTML=`
+      <div class="form-grid">
+        <div class="form-row"><label>Date</label><input id="m-date" type="date" value="${v('date')}"/></div>
+        <div class="form-row"><label>Vendor</label><input id="m-vendor" value="${v('vendor')}"/></div>
+      </div>
+      <div class="form-row"><label>Category</label>
+        <select id="m-cat">
+          <option${v('category')==='Software'?' selected':''}>Software</option>
+          <option${v('category')==='Rent/Office'?' selected':''}>Rent/Office</option>
+          <option${v('category')==='Insurance'?' selected':''}>Insurance</option>
+          <option${v('category')==='Marketing'?' selected':''}>Marketing</option>
+          <option${v('category')==='Payroll'?' selected':''}>Payroll</option>
+          <option${v('category')==='Materials'?' selected':''}>Materials</option>
+          <option${v('category')==='Subcontractor'?' selected':''}>Subcontractor</option>
+          <option${v('category')==='Travel'?' selected':''}>Travel</option>
+          <option${v('category')==='Utilities'?' selected':''}>Utilities</option>
+          <option${v('category')==='Misc'?' selected':''}>Misc</option>
+        </select>
+      </div>
+      <div class="form-row"><label>Amount ($)</label><input id="m-amount" type="number" step="0.01" value="${v('amount')}"/></div>
+      <div class="form-row"><label>Payment Method</label>
+        <select id="m-method"><option>Credit Card</option><option>Check</option><option>ACH</option><option>Cash</option><option>Wire</option></select>
+      </div>
+      <div class="form-row"><label>Notes</label><input id="m-notes" value="${v('notes')}"/></div>`;
+    $('modal-save-btn').onclick=saveExpense;
   } else if(type==='asset'){
-    title.textContent=id?'Edit Asset':'Add Asset';
-    body.innerHTML=`<div class="form-row"><label>Asset Name</label><input id="m-name" value="${v('asset_name')}" /></div><div class="form-grid"><div class="form-row"><label>Category</label><input id="m-cat" value="${v('category')}" placeholder="e.g. Equipment" /></div><div class="form-row"><label>Date Acquired</label><input id="m-date" type="date" value="${v('date_acquired')}" /></div></div><div class="form-row"><label>Description</label><input id="m-desc" value="${v('description')}" /></div><div class="form-grid"><div class="form-row"><label>Purchase Cost ($)</label><input id="m-purch" type="number" value="${v('purchase_cost')}" /></div><div class="form-row"><label>Current Value ($)</label><input id="m-val" type="number" value="${v('current_value')}" /></div></div><div class="form-row"><label>Useful Life (years)</label><input id="m-life" type="number" value="${v('useful_life_years')}" /></div>`;
-    saveBtn.onclick=()=>saveAsset();
+    $('modal-title').textContent=id?'Edit Asset':'Add Asset';
+    $('modal-body').innerHTML=`
+      <div class="form-row"><label>Asset Name</label><input id="m-name" value="${v('asset_name')}"/></div>
+      <div class="form-grid">
+        <div class="form-row"><label>Category</label><input id="m-cat" value="${v('category')}" placeholder="e.g. Equipment"/></div>
+        <div class="form-row"><label>Date Acquired</label><input id="m-date" type="date" value="${v('date_acquired')}"/></div>
+      </div>
+      <div class="form-row"><label>Description</label><input id="m-desc" value="${v('description')}"/></div>
+      <div class="form-grid">
+        <div class="form-row"><label>Purchase Cost ($)</label><input id="m-purch" type="number" value="${v('purchase_cost')}"/></div>
+        <div class="form-row"><label>Current Value ($)</label><input id="m-val" type="number" value="${v('current_value')}"/></div>
+      </div>
+      <div class="form-row"><label>Useful Life (years)</label><input id="m-life" type="number" value="${v('useful_life_years')}"/></div>`;
+    $('modal-save-btn').onclick=saveAsset;
   } else if(type==='liability'){
-    title.textContent=id?'Edit Liability':'Add Liability';
-    body.innerHTML=`<div class="form-row"><label>Creditor</label><input id="m-creditor" value="${v('creditor')}" /></div><div class="form-grid"><div class="form-row"><label>Type</label><input id="m-type" value="${v('type')}" placeholder="e.g. Loan, Line of Credit" /></div><div class="form-row"><label>Balance ($)</label><input id="m-bal" type="number" value="${v('balance')}" /></div></div><div class="form-grid"><div class="form-row"><label>Interest Rate (e.g. 0.065)</label><input id="m-rate" type="number" step="0.001" value="${v('interest_rate')}" /></div><div class="form-row"><label>Monthly Payment ($)</label><input id="m-pmt" type="number" value="${v('monthly_payment')}" /></div></div><div class="form-row"><label>Maturity Date</label><input id="m-mat" type="date" value="${v('maturity_date')}" /></div><div class="form-row"><label>Notes</label><input id="m-notes" value="${v('notes')}" /></div>`;
-    saveBtn.onclick=()=>saveLiability();
+    $('modal-title').textContent=id?'Edit Liability':'Add Liability';
+    $('modal-body').innerHTML=`
+      <div class="form-row"><label>Creditor</label><input id="m-creditor" value="${v('creditor')}"/></div>
+      <div class="form-grid">
+        <div class="form-row"><label>Type</label><input id="m-type" value="${v('type')}" placeholder="e.g. Loan"/></div>
+        <div class="form-row"><label>Balance ($)</label><input id="m-bal" type="number" value="${v('balance')}"/></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Interest Rate (e.g. 0.065)</label><input id="m-rate" type="number" step="0.001" value="${v('interest_rate')}"/></div>
+        <div class="form-row"><label>Monthly Payment ($)</label><input id="m-pmt" type="number" value="${v('monthly_payment')}"/></div>
+      </div>
+      <div class="form-row"><label>Maturity Date</label><input id="m-mat" type="date" value="${v('maturity_date')}"/></div>
+      <div class="form-row"><label>Notes</label><input id="m-notes" value="${v('notes')}"/></div>`;
+    $('modal-save-btn').onclick=saveLiability;
   }
-  overlay.classList.add('open');
-  if(type==='income') setTimeout(()=>modalServiceSelect(),100);
+  $('modal-overlay').classList.add('open');
+  if(type==='income')setTimeout(()=>modalSvcSelect(),50);
 }
-function modalServiceSelect(){
+
+function modalSvcSelect(){
   const sel=$('m-svc');if(!sel)return;
-  const parts=sel.value.split('|');if(parts.length<4)return;
-  const [code,name,hrs,rate]=parts;
-  const ip=gd('rw_ip').find(r=>r.code===code);
-  if(ip){const m=$('m-ca-banner');if(m)m.style.display=ip.ca_fallback?'block':'none';}
-  if($('m-hrs'))$('m-hrs').value=hrs!=='null'?+hrs:'';
-  if($('m-rate'))$('m-rate').value=rate!=='null'?+rate:'';
+  const parts=sel.value.split('|');
+  const ip=gd('rw_ip').find(r=>r.code===parts[0]);
+  if(ip){const b=$('m-ca-banner');if(b)b.style.display=ip.ca_fallback?'block':'none';}
+  if($('m-hrs'))$('m-hrs').value=parts[2]!=='null'?+parts[2]:'';
+  if($('m-rate'))$('m-rate').value=parts[3]!=='null'?+parts[3]:'';
   modalCalc();
 }
-function modalCalc(){const h=+($('m-hrs')||{}).value,r=+($('m-rate')||{}).value;if(h&&r&&$('m-inv'))$('m-inv').value=(h*r).toFixed(2);}
+function modalCalc(){
+  const h=+($('m-hrs')||{}).value,r=+($('m-rate')||{}).value;
+  if(h&&r&&$('m-inv'))$('m-inv').value=(h*r).toFixed(2);
+}
 function closeModal(){$('modal-overlay').classList.remove('open')}
 function closeModalOnOverlay(e){if(e.target===$('modal-overlay'))closeModal()}
+
 function saveIncome(){
-  const d={id:_modalId||uid(),date:$('m-date').value,client_name:$('m-client').value,service_type:$('m-svc').value.split('|')[1]||'',csi_code:$('m-svc').value.split('|')[0]||'',est_hours:+$('m-hrs').value||null,hourly_rate:+$('m-rate').value||null,invoice_amount:+$('m-inv').value||0,payment_status:$('m-status').value,notes:$('m-notes').value,created_at:new Date().toISOString()};
-  const all=gd('rw_income');if(_modalId){const i=all.findIndex(r=>String(r.id)===String(_modalId));if(i>=0)all[i]=d;else all.push(d)}else all.push(d);
+  const d={id:_modalId||uid(),date:$('m-date').value,client_name:$('m-client').value,
+    service_type:($('m-svc').value.split('|')[1]||''),csi_code:($('m-svc').value.split('|')[0]||''),
+    est_hours:+$('m-hrs').value||null,hourly_rate:+$('m-rate').value||null,
+    invoice_amount:+$('m-inv').value||0,payment_status:$('m-status').value,
+    notes:$('m-notes').value,created_at:new Date().toISOString()};
+  const all=gd('rw_income');
+  if(_modalId){const i=all.findIndex(r=>String(r.id)===String(_modalId));if(i>=0)all[i]=d;else all.push(d)}else all.push(d);
   sd('rw_income',all);closeModal();toast('Income saved');renderIncome();
 }
 function saveExpense(){
-  const d={id:_modalId||uid(),date:$('m-date').value,category:$('m-cat').value,vendor:$('m-vendor').value,amount:+$('m-amount').value||0,payment_method:$('m-method').value,notes:$('m-notes').value,created_at:new Date().toISOString()};
-  const all=gd('rw_expenses');if(_modalId){const i=all.findIndex(r=>String(r.id)===String(_modalId));if(i>=0)all[i]=d;else all.push(d)}else all.push(d);
+  const d={id:_modalId||uid(),date:$('m-date').value,category:$('m-cat').value,
+    vendor:$('m-vendor').value,amount:+$('m-amount').value||0,
+    payment_method:$('m-method').value,notes:$('m-notes').value,created_at:new Date().toISOString()};
+  const all=gd('rw_expenses');
+  if(_modalId){const i=all.findIndex(r=>String(r.id)===String(_modalId));if(i>=0)all[i]=d;else all.push(d)}else all.push(d);
   sd('rw_expenses',all);closeModal();toast('Expense saved');renderExpenses();
 }
 function saveAsset(){
-  const d={id:_modalId||uid(),asset_name:$('m-name').value,category:$('m-cat').value,description:$('m-desc').value,purchase_cost:+$('m-purch').value||0,current_value:+$('m-val').value||0,date_acquired:$('m-date').value,useful_life_years:+$('m-life').value||0};
-  const all=gd('rw_assets');if(_modalId){const i=all.findIndex(r=>String(r.id)===String(_modalId));if(i>=0)all[i]=d;else all.push(d)}else all.push(d);
+  const d={id:_modalId||uid(),asset_name:$('m-name').value,category:$('m-cat').value,
+    description:$('m-desc').value,purchase_cost:+$('m-purch').value||0,
+    current_value:+$('m-val').value||0,date_acquired:$('m-date').value,
+    useful_life_years:+$('m-life').value||0};
+  const all=gd('rw_assets');
+  if(_modalId){const i=all.findIndex(r=>String(r.id)===String(_modalId));if(i>=0)all[i]=d;else all.push(d)}else all.push(d);
   sd('rw_assets',all);closeModal();toast('Asset saved');renderAssets();
 }
 function saveLiability(){
-  const d={id:_modalId||uid(),creditor:$('m-creditor').value,type:$('m-type').value,balance:+$('m-bal').value||0,interest_rate:+$('m-rate').value||0,monthly_payment:+$('m-pmt').value||0,maturity_date:$('m-mat').value,notes:$('m-notes').value};
-  const all=gd('rw_liabilities');if(_modalId){const i=all.findIndex(r=>String(r.id)===String(_modalId));if(i>=0)all[i]=d;else all.push(d)}else all.push(d);
+  const d={id:_modalId||uid(),creditor:$('m-creditor').value,type:$('m-type').value,
+    balance:+$('m-bal').value||0,interest_rate:+$('m-rate').value||0,
+    monthly_payment:+$('m-pmt').value||0,maturity_date:$('m-mat').value,notes:$('m-notes').value};
+  const all=gd('rw_liabilities');
+  if(_modalId){const i=all.findIndex(r=>String(r.id)===String(_modalId));if(i>=0)all[i]=d;else all.push(d)}else all.push(d);
   sd('rw_liabilities',all);closeModal();toast('Liability saved');renderLiabilities();
 }
 function deleteRecord(key,id,cb){
   if(!confirm('Delete this record?'))return;
-  const all=gd(key).filter(r=>String(r.id)!==String(id));sd(key,all);toast('Deleted','error');if(cb)cb();
+  sd(key,gd(key).filter(r=>String(r.id)!==String(id)));
+  toast('Deleted','error');if(cb)cb();
 }
 
-// ═══════════════════════════════════════════════════════
-// NEW PROJECT WIZARD
-// ═══════════════════════════════════════════════════════
-let npStep=1,npData={};
+// ═══════════════════ DIVISION ESTIMATOR ═══════════════════
+const EST_DIVS=[
+  {id:'d01',name:'Division 1 — General Requirements',items:[
+    {code:'1040',name:'Client Communications & Selection Development',ref_low:6720,ref_mid:2800,ref_high:32256,allowance:true},
+    {code:'1045',name:'Project Supervision',ref_low:23520,ref_mid:26600,ref_high:141120,allowance:false},
+    {code:'1505',name:'Mobilization',ref_low:1680,ref_mid:1100,ref_high:1344,allowance:false},
+    {code:'1510',name:'Temporary Utilities',ref_low:1250,ref_mid:1200,ref_high:11425,allowance:false},
+    {code:'1512',name:'General Labor',ref_low:5920,ref_mid:4800,ref_high:28416,allowance:false},
+    {code:'1560',name:'Construction Clean-up',ref_low:740,ref_mid:2000,ref_high:22200,allowance:false},
+    {code:'1565',name:'Landfill / Dumpster Fees',ref_low:2250,ref_mid:5250,ref_high:3600,allowance:false},
+    {code:'1640',name:'Finish Protection',ref_low:0,ref_mid:3296,ref_high:1750,allowance:false},
+    {code:'1700',name:'Contract Close Out',ref_low:672,ref_mid:2250,ref_high:1680,allowance:false},
+    {code:'1710',name:'Finish Cleaning',ref_low:0,ref_mid:1200,ref_high:3450,allowance:false},
+  ]},
+  {id:'d02',name:'Division 2 — Sitework',items:[
+    {code:'2025',name:'Shoring',ref_low:0,ref_mid:0,ref_high:24000,allowance:true},
+    {code:'2050',name:'Demolition',ref_low:0,ref_mid:8950,ref_high:23779,allowance:false},
+    {code:'2210',name:'Grading',ref_low:19790,ref_mid:22000,ref_high:85704,allowance:false},
+    {code:'2212',name:'Finish Grading',ref_low:4500,ref_mid:0,ref_high:0,allowance:false},
+    {code:'2270',name:'Erosion Control',ref_low:5760,ref_mid:2600,ref_high:4572,allowance:true},
+    {code:'2500',name:'Paving & Surfacing',ref_low:0,ref_mid:0,ref_high:5550,allowance:true},
+    {code:'2665',name:'Water Hook-Up',ref_low:15200,ref_mid:5400,ref_high:4243,allowance:true},
+    {code:'2720',name:'Storm Drainage Controls',ref_low:0,ref_mid:12500,ref_high:68730,allowance:false},
+    {code:'2740',name:'Septic System',ref_low:30205,ref_mid:0,ref_high:0,allowance:false},
+    {code:'2780',name:'General Utilities',ref_low:27750,ref_mid:18775,ref_high:45194,allowance:true},
+    {code:'2830',name:'Fences and Gates',ref_low:0,ref_mid:0,ref_high:45745,allowance:false},
+    {code:'2900',name:'Landscaping',ref_low:0,ref_mid:0,ref_high:105705,allowance:false},
+  ]},
+  {id:'d03',name:'Division 3 — Concrete',items:[
+    {code:'3100',name:'Structural Concrete',ref_low:37910,ref_mid:56665,ref_high:216340,allowance:false},
+    {code:'3320',name:'Flat Work (Patio Slabs, Pathways)',ref_low:10585,ref_mid:14000,ref_high:57660,allowance:false},
+    {code:'3350',name:'Finished Concrete Floors',ref_low:0,ref_mid:0,ref_high:22160,allowance:false},
+  ]},
+  {id:'d04',name:'Division 4 — Masonry',items:[
+    {code:'4200',name:'Masonry',ref_low:0,ref_mid:0,ref_high:0,allowance:false},
+    {code:'4450',name:'Stone Veneer Masonry',ref_low:0,ref_mid:0,ref_high:0,allowance:false},
+    {code:'4465',name:'Granite / Stone Counter Tops',ref_low:0,ref_mid:12735,ref_high:23500,allowance:true},
+  ]},
+  {id:'d05',name:'Division 5 — Metals',items:[
+    {code:'5050',name:'Metal Framing / Welding',ref_low:0,ref_mid:0,ref_high:20480,allowance:false},
+    {code:'5100',name:'Structural Metal Framing',ref_low:0,ref_mid:0,ref_high:89094,allowance:false},
+    {code:'5580',name:'Sheetmetal Fabrication',ref_low:1250,ref_mid:2800,ref_high:8000,allowance:true},
+  ]},
+  {id:'d06',name:'Division 6 — Wood & Plastics',items:[
+    {code:'6020',name:'Structural Hardware',ref_low:1635,ref_mid:2500,ref_high:5578,allowance:false},
+    {code:'6100',name:'Framing Materials and Labor',ref_low:76097,ref_mid:70000,ref_high:140500,allowance:false},
+    {code:'6110',name:'Siding Materials & Labor',ref_low:29389,ref_mid:18000,ref_high:196385,allowance:false},
+    {code:'6115',name:'Soffits and Pickup',ref_low:7000,ref_mid:2600,ref_high:5000,allowance:true},
+    {code:'6200',name:'Finish Carpentry',ref_low:0,ref_mid:10800,ref_high:36704,allowance:true},
+    {code:'6215',name:'Hang Doors',ref_low:2718,ref_mid:9667,ref_high:0,allowance:false},
+    {code:'6400',name:'Cabinets',ref_low:0,ref_mid:28928,ref_high:222300,allowance:true},
+    {code:'6418',name:'Wood / Solid Surface Countertops',ref_low:0,ref_mid:0,ref_high:28632,allowance:false},
+  ]},
+  {id:'d07',name:'Division 7 — Thermal & Moisture',items:[
+    {code:'7100',name:'Waterproofing',ref_low:3128,ref_mid:5096,ref_high:14844,allowance:false},
+    {code:'7200',name:'Insulation',ref_low:0,ref_mid:3320,ref_high:42000,allowance:false},
+    {code:'7300',name:'Roofing',ref_low:11100,ref_mid:15360,ref_high:30500,allowance:false},
+    {code:'7600',name:'Gutters and Downspouts',ref_low:0,ref_mid:1895,ref_high:0,allowance:false},
+    {code:'7800',name:'Skylights',ref_low:0,ref_mid:4199,ref_high:25118,allowance:false},
+  ]},
+  {id:'d08',name:'Division 8 — Doors & Windows',items:[
+    {code:'8200',name:'Doors',ref_low:4000,ref_mid:7625,ref_high:94230,allowance:true},
+    {code:'8600',name:'Windows',ref_low:6000,ref_mid:8280,ref_high:268192,allowance:true},
+    {code:'8700',name:'Finish Hardware',ref_low:0,ref_mid:850,ref_high:1000,allowance:true},
+    {code:'8710',name:'Door Hardware & Locksets',ref_low:400,ref_mid:3065,ref_high:2945,allowance:true},
+    {code:'8810',name:'Mirrors / Glazing',ref_low:0,ref_mid:705,ref_high:8600,allowance:true},
+  ]},
+  {id:'d09',name:'Division 9 — Finishes',items:[
+    {code:'9200',name:'Stucco',ref_low:0,ref_mid:0,ref_high:0,allowance:false},
+    {code:'9250',name:'Drywall',ref_low:0,ref_mid:18930,ref_high:37940,allowance:false},
+    {code:'9300',name:'Tile',ref_low:0,ref_mid:8300,ref_high:59200,allowance:true},
+    {code:'9500',name:'Acoustic Treatments',ref_low:0,ref_mid:0,ref_high:156700,allowance:false},
+    {code:'9550',name:'Wood Floors',ref_low:0,ref_mid:0,ref_high:0,allowance:false},
+    {code:'9900',name:'Painting',ref_low:0,ref_mid:12400,ref_high:14840,allowance:false},
+  ]},
+  {id:'d10',name:'Division 10 — Specialties',items:[
+    {code:'10300',name:'Fireplace',ref_low:0,ref_mid:0,ref_high:0,allowance:true},
+    {code:'10800',name:'Bath Accessories',ref_low:0,ref_mid:1340,ref_high:16065,allowance:true},
+    {code:'10822',name:'Shower / Tub Enclosures',ref_low:0,ref_mid:4200,ref_high:8200,allowance:true},
+    {code:'10900',name:'Closets',ref_low:0,ref_mid:1200,ref_high:0,allowance:true},
+  ]},
+  {id:'d11',name:'Division 11 — Equipment',items:[
+    {code:'11200',name:'Water Treatment Equipment',ref_low:0,ref_mid:0,ref_high:4188,allowance:false},
+    {code:'11452',name:'Appliances',ref_low:0,ref_mid:0,ref_high:48540,allowance:true},
+    {code:'11880',name:'Equipment Rental',ref_low:1500,ref_mid:5000,ref_high:2500,allowance:true},
+  ]},
+  {id:'d12',name:'Division 12 — Furnishings',items:[
+    {code:'12500',name:'Window Treatments',ref_low:0,ref_mid:0,ref_high:20228,allowance:false},
+  ]},
+  {id:'d13',name:'Division 13 — Special Construction',items:[
+    {code:'13170',name:'Spa',ref_low:0,ref_mid:0,ref_high:0,allowance:false},
+    {code:'13180',name:'Pool',ref_low:0,ref_mid:0,ref_high:0,allowance:false},
+    {code:'13602',name:'PV Solar System',ref_low:0,ref_mid:0,ref_high:40268,allowance:false},
+    {code:'13900',name:'Fire Sprinklers',ref_low:0,ref_mid:0,ref_high:7040,allowance:false},
+  ]},
+  {id:'d15',name:'Division 15 — Mechanical',items:[
+    {code:'15400',name:'Plumbing Services',ref_low:0,ref_mid:18000,ref_high:44198,allowance:false},
+    {code:'15401',name:'Plumbing Fixtures',ref_low:0,ref_mid:5410,ref_high:22850,allowance:true},
+    {code:'15500',name:'HVAC',ref_low:0,ref_mid:18870,ref_high:50128,allowance:false},
+    {code:'15515',name:'Hydronic / Radiant Heating',ref_low:0,ref_mid:0,ref_high:42123,allowance:false},
+  ]},
+  {id:'d16',name:'Division 16 — Electrical',items:[
+    {code:'16200',name:'Back-Up Power / Generator / Tesla Powerwalls',ref_low:0,ref_mid:0,ref_high:34995,allowance:false},
+    {code:'16400',name:'Electrical Services',ref_low:0,ref_mid:27500,ref_high:164288,allowance:false},
+    {code:'16401',name:'Light Fixture Package',ref_low:0,ref_mid:0,ref_high:45600,allowance:true},
+    {code:'16700',name:'Low Voltage Systems',ref_low:0,ref_mid:0,ref_high:50680,allowance:false},
+  ]},
+];
+
+let estChecks={},estVals={};
+
 function initNewProject(){
-  npStep=1;npData={};
-  $('np-date').value=new Date().toISOString().split('T')[0];
-  $('np-success').style.display='none';
-  document.querySelectorAll('.wizard-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.wstep').forEach(s=>{s.classList.remove('active','done')});
-  $('wp1').classList.add('active');$('ws1').classList.add('active');
-  populateNpServices();
+  estChecks={};estVals={};
+  $('est-date').value=new Date().toISOString().split('T')[0];
+  $('est-success').style.display='none';
+  estGoStep(1);
 }
-function populateNpServices(filter=''){
-  const ip=gd('rw_ip');const sel=$('np-service');
-  const divs=[...new Set(ip.map(r=>r.division))];
-  sel.innerHTML=divs.map(d=>{const rows=ip.filter(r=>r.division===d&&(!filter||r.name.toLowerCase().includes(filter.toLowerCase())));if(!rows.length)return'';return`<optgroup label="${d}">${rows.map(r=>`<option value="${r.code}|${r.avg_hrs}|${r.hourly_rate}|${r.avg_total}|${r.ca_fallback?'1':'0'}">${r.name}</option>`).join('')}</optgroup>`}).join('');
-}
-function filterNpServices(){populateNpServices($('np-search').value);}
-function onServiceSelect(){
-  const sel=$('np-service');if(!sel.value)return;
-  const [code,hrs,rate,hist,ca]=sel.value.split('|');
-  $('np-hours').value=hrs!=='null'?+hrs:'';
-  $('np-rate').value=rate!=='null'?+rate:'';
-  $('np-ca-banner').style.display=ca==='1'?'block':'none';
-  calcInvoice();
-}
-function calcInvoice(){
-  const h=+$('np-hours').value,r=+$('np-rate').value;
-  if(h&&r){
-    const sel=$('np-service');const parts=sel.value.split('|');const hist=parts[3];
-    $('np-calc').style.display='block';
-    $('np-c-hrs').textContent=h.toLocaleString()+' hrs';
-    $('np-c-rate').textContent=fc(r)+'/hr';
-    $('np-c-hist').textContent=hist&&hist!=='null'?fc(+hist):'—';
-    $('np-c-inv').textContent=fc(h*r);
-  } else $('np-calc').style.display='none';
-}
-function wpNext(step){
-  if(step===1){if(!$('np-client').value.trim()){alert('Client name is required');return;}npData.client=$('np-client').value;npData.date=$('np-date').value;npData.type=$('np-type').value;npData.notes=$('np-notes').value;}
-  if(step===2){if(!$('np-service').value){alert('Please select a service');return;}const parts=$('np-service').value.split('|');const options=$('np-service').selectedOptions[0];npData.csi_code=parts[0];npData.service=options?options.text:parts[0];npData.hours=+$('np-hours').value||null;npData.rate=+$('np-rate').value||null;npData.invoice=npData.hours&&npData.rate?npData.hours*npData.rate:0;}
-  if(step===3){buildReview();}
-  $('wp'+step).classList.remove('active');$('ws'+step).classList.remove('active');$('ws'+step).classList.add('done');
-  $('wp'+(step+1)).classList.add('active');$('ws'+(step+1)).classList.add('active');
-  npStep=step+1;
-}
-function wpBack(step){
-  $('wp'+step).classList.remove('active');$('ws'+step).classList.remove('active');
-  $('wp'+(step-1)).classList.add('active');$('ws'+(step-1)).classList.remove('done');$('ws'+(step-1)).classList.add('active');
-  npStep=step-1;
-}
-function buildReview(){
-  $('np-review').innerHTML=`<div class="review-row"><span class="review-label">Client</span><span class="review-value">${npData.client}</span></div><div class="review-row"><span class="review-label">Date</span><span class="review-value">${fd(npData.date)}</span></div><div class="review-row"><span class="review-label">Project Type</span><span class="review-value">${npData.type}</span></div><div class="review-row"><span class="review-label">Service</span><span class="review-value">${npData.service}</span></div><div class="review-row"><span class="review-label">CSI Code</span><span class="review-value" style="font-family:monospace">${npData.csi_code}</span></div><div class="review-row"><span class="review-label">Estimated Hours</span><span class="review-value">${npData.hours?npData.hours+' hrs':'—'}</span></div><div class="review-row"><span class="review-label">Hourly Rate</span><span class="review-value">${npData.rate?fc(npData.rate)+'/hr':'—'}</span></div><div class="review-row"><span class="review-label">Invoice Amount</span><span class="review-value" style="font-size:18px;color:var(--dg)">${fc(npData.invoice)}</span></div>${npData.notes?`<div class="review-row"><span class="review-label">Notes</span><span class="review-value">${npData.notes}</span></div>`:''}</div>`;
-}
-function saveNewProject(){
-  const d={id:uid(),date:npData.date,client_name:npData.client,service_type:npData.service,csi_code:npData.csi_code,est_hours:npData.hours,hourly_rate:npData.rate,invoice_amount:npData.invoice,payment_status:$('np-status').value,notes:npData.notes,created_at:new Date().toISOString()};
-  const all=gd('rw_income');all.push(d);sd('rw_income',all);
-  $('np-success').style.display='block';
-}
-function resetNewProject(){$('np-success').style.display='none';initNewProject();}
 
-// ═══════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════
+function estGoStep(n){
+  document.querySelectorAll('.est-panel').forEach((p,i)=>p.classList.toggle('active',i===n-1));
+  document.querySelectorAll('.est-step').forEach((s,i)=>{
+    s.classList.remove('active','done');
+    if(i===n-1)s.classList.add('active');
+    else if(i<n-1)s.classList.add('done');
+  });
+  if(n===2){estUpdateRefBanner();estBuildDivisions();}
+  if(n===3){estBuildReview();}
+}
+
+function estUpdateSF(){
+  const sqft=+$('est-sqft').value;
+  const psf=+$('est-complexity').value;
+  const el=$('est-sf-guide');
+  if(sqft>0){
+    el.style.display='block';
+    el.className='sf-guide';
+    el.innerHTML=`SF Estimate: <strong>${sqft.toLocaleString()} SF × $${psf}/SF = ${fc(sqft*psf)}</strong> &nbsp;·&nbsp; With 12% fee: <strong>${fc(sqft*psf*1.12)}</strong>`;
+  } else {el.style.display='none';}
+}
+
+function estUpdateRefBanner(){
+  const type=$('est-type').value;
+  const sqft=+$('est-sqft').value;
+  const psf=+$('est-complexity').value;
+  const refs={
+    'ADU':'Real refs: Woodjack ADU $391K ($325/SF, shell only) · C3 ADU $632K ($420/SF, full build)',
+    'New Construction':'Real ref: Reeve Residence $3.64M ($1,655/SF, 2,200 SF custom home)',
+    'Remodel':'Typical range: $150–400/SF depending on scope and finish level (SLO County)',
+    'Design-Build':'Use mid range $400–500/SF as starting point for SLO County',
+    'Architecture':'Arch fees typically 10–15% of construction cost',
+    'Construction Management':'CM fees typically 5–10% of construction cost',
+    'Landscape':'Reeve landscaping: $105K · Typical SLO range: $25–75/SF of landscaped area',
+    'Engineering':'Structural: $15–25K typical · Site engineering: $10–50K',
+    'Other':'No specific reference — build from line items below',
+  };
+  $('est-ref-banner').innerHTML='<strong>'+type+':</strong> '+(refs[type]||'Build your estimate below.')+(sqft>0?` &nbsp;·&nbsp; Your target: <strong>${fc(sqft*psf)}</strong>`:'');
+}
+
+function estBuildDivisions(){
+  const fee=+$('est-fee').value;
+  const cont=+$('est-cont').value;
+  $('est-cont-lbl').textContent='Contingency ('+cont+'%)';
+  $('est-fee-lbl').textContent='Builder Fee ('+fee+'%)';
+  $('est-divisions').innerHTML=EST_DIVS.map(div=>{
+    const divSub=div.items.reduce((s,item)=>s+(estChecks[item.code]?(+estVals[item.code]||0):0),0);
+    const rows=div.items.map(item=>{
+      const refs=[item.ref_low,item.ref_mid,item.ref_high].filter(x=>x>0);
+      const refStr=refs.length?'Ref: '+refs.map(r=>'$'+Math.round(r/1000)+'K').join(' / '):'No historical data';
+      const checked=estChecks[item.code]||false;
+      const val=estVals[item.code]||'';
+      return`<div class="line-row">
+        <input type="checkbox" class="line-check" ${checked?'checked':''} data-code="${item.code}" onchange="estToggle('${item.code}',this.checked)"/>
+        <div class="line-info">
+          <div><span class="line-code">${item.code}</span><span class="line-name">${item.name}</span>${item.allowance?'<span class="allowance-tag">ALLOW</span>':''}</div>
+          <div class="line-ref">${refStr}</div>
+        </div>
+        <div class="line-amt">
+          <input type="number" id="est-val-${item.code}" value="${val}" placeholder="0.00" ${checked?'':'disabled'} onchange="estValChange('${item.code}',this.value)" oninput="estValChange('${item.code}',this.value)"/>
+        </div>
+      </div>`;
+    }).join('');
+    return`<div class="div-card">
+      <div class="div-hdr" onclick="estToggleDiv('body-${div.id}','chev-${div.id}')">
+        <div class="div-hdr-left">
+          <div class="div-hdr-title">${div.name}</div>
+          <div class="div-hdr-sub">Click to expand · ${div.items.length} line items</div>
+        </div>
+        <div class="div-hdr-right">
+          <span class="div-total-badge" id="dtot-${div.id}">${divSub>0?fc(divSub):'—'}</span>
+          <span class="div-chevron" id="chev-${div.id}">▼</span>
+        </div>
+      </div>
+      <div class="div-body" id="body-${div.id}">${rows}</div>
+    </div>`;
+  }).join('');
+  estRecalc();
+}
+
+function estToggleDiv(bodyId,chevId){
+  const b=$(bodyId),c=$(chevId);
+  if(b){b.classList.toggle('open');c.classList.toggle('open');}
+}
+
+function estToggle(code,checked){
+  estChecks[code]=checked;
+  const inp=$('est-val-'+code);
+  if(inp){inp.disabled=!checked;inp.style.opacity=checked?'1':'0.35';}
+  estRecalcDivTotal(code);
+  estRecalc();
+}
+
+function estValChange(code,val){
+  estVals[code]=val;
+  estRecalcDivTotal(code);
+  estRecalc();
+}
+
+function estRecalcDivTotal(code){
+  const div=EST_DIVS.find(d=>d.items.some(i=>i.code===code));
+  if(!div)return;
+  const tot=div.items.reduce((s,item)=>s+(estChecks[item.code]?(+estVals[item.code]||0):0),0);
+  const el=$('dtot-'+div.id);
+  if(el)el.textContent=tot>0?fc(tot):'—';
+}
+
+function estRecalc(){
+  const fee=+$('est-fee').value;
+  const cont=+$('est-cont').value;
+  const sub=EST_DIVS.reduce((s,d)=>s+d.items.reduce((ss,item)=>ss+(estChecks[item.code]?(+estVals[item.code]||0):0),0),0);
+  const contAmt=sub*cont/100;
+  const feeAmt=(sub+contAmt)*fee/100;
+  const total=sub+contAmt+feeAmt;
+  $('est-sub').textContent=fc(sub);
+  $('est-cont-amt').textContent=fc(contAmt);
+  $('est-fee-amt').textContent=fc(feeAmt);
+  $('est-total').textContent=fc(total);
+}
+
+function estBuildReview(){
+  const client=$('est-client').value||'—';
+  const pname=$('est-name').value;
+  const type=$('est-type').value;
+  const sqft=+$('est-sqft').value;
+  const fee=+$('est-fee').value;
+  const cont=+$('est-cont').value;
+  const notes=$('est-notes').value;
+  const activeDivs=EST_DIVS.map(div=>{
+    const items=div.items.filter(item=>estChecks[item.code]&&(+estVals[item.code]||0)>0);
+    const total=items.reduce((s,item)=>s+(+estVals[item.code]||0),0);
+    return{div,items,total};
+  }).filter(d=>d.total>0);
+  const sub=activeDivs.reduce((s,d)=>s+d.total,0);
+  const contAmt=sub*cont/100;
+  const feeAmt=(sub+contAmt)*fee/100;
+  const total=sub+contAmt+feeAmt;
+  const psf=sqft>0?total/sqft:0;
+  const divRows=activeDivs.map(({div,items,total:dt})=>`
+    <div class="est-review-section">
+      <div class="est-review-div"><span>${div.name}</span><span>${fc(dt)}</span></div>
+      ${items.map(item=>`<div class="est-review-item">
+        <span><span style="font-family:monospace;font-size:10px;margin-right:6px;color:var(--txt2)">${item.code}</span>${item.name}${item.allowance?'<span class="allowance-tag">ALLOW</span>':''}</span>
+        <span>${fc(+estVals[item.code]||0)}</span>
+      </div>`).join('')}
+    </div>`).join('');
+  $('est-review').innerHTML=`
+    <div class="kpi-grid" style="margin-bottom:16px">
+      <div class="kpi-card pos"><div class="kpi-label">Client</div><div class="kpi-value" style="font-size:16px">${client}</div>${pname?`<div class="kpi-sub">${pname}</div>`:''}</div>
+      <div class="kpi-card"><div class="kpi-label">Project Type</div><div class="kpi-value" style="font-size:16px">${type}</div><div class="kpi-sub">${new Date($('est-date').value+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div></div>
+      <div class="kpi-card pos"><div class="kpi-label">Total Contract</div><div class="kpi-value pos">${fc(total)}</div>${psf>0?`<div class="kpi-sub">${fc(psf)}/SF · SLO range $300–$1,600/SF</div>`:''}</div>
+    </div>
+    <div class="table-wrap" style="margin-bottom:14px">
+      <div class="table-header"><h3>Line Item Breakdown</h3></div>
+      <div style="padding:16px 18px;max-height:400px;overflow-y:auto">
+        ${divRows||'<p style="color:var(--txt2);font-size:13px;text-align:center;padding:20px">No line items selected — go back and check items in Division Estimator.</p>'}
+        <div style="border-top:2px solid var(--border);margin-top:12px;padding-top:12px">
+          <div class="est-review-div" style="font-size:13px"><span>Subtotal (all divisions)</span><span>${fc(sub)}</span></div>
+          <div class="est-review-div" style="font-size:13px"><span>Contingency (${cont}%)</span><span>${fc(contAmt)}</span></div>
+          <div class="est-review-div" style="font-size:13px"><span>Builder Fee (${fee}%)</span><span>${fc(feeAmt)}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:600;margin-top:8px;padding-top:8px;border-top:2px solid var(--dg)">
+            <span>TOTAL CONTRACT</span><span style="color:var(--mg)">${fc(total)}</span>
+          </div>
+          ${sqft>0&&total>0?`<div style="font-size:12px;color:var(--txt2);margin-top:4px">Cost per SF: ${fc(psf)} (SLO County range: $300–$1,600/SF)</div>`:''}
+        </div>
+      </div>
+    </div>
+    ${notes?`<div style="font-size:12px;color:var(--txt2);margin-bottom:10px"><strong>Notes:</strong> ${notes}</div>`:''}`;
+}
+
+function estSave(){
+  if(!$('est-client').value.trim()){alert('Please enter a client name in Step 1');estGoStep(1);return;}
+  const fee=+$('est-fee').value,cont=+$('est-cont').value;
+  const sub=EST_DIVS.reduce((s,d)=>s+d.items.reduce((ss,item)=>ss+(estChecks[item.code]?(+estVals[item.code]||0):0),0),0);
+  const total=sub*(1+cont/100)*(1+fee/100);
+  const activeDivNames=EST_DIVS.filter(d=>d.items.some(item=>estChecks[item.code]&&(+estVals[item.code]||0)>0)).map(d=>d.name.split('—')[1].trim()).join(', ');
+  const d={id:uid(),date:$('est-date').value,client_name:$('est-client').value,
+    service_type:$('est-type').value+(activeDivNames?' ('+activeDivNames+')':''),
+    csi_code:'Multi-division',est_hours:null,hourly_rate:null,
+    invoice_amount:total,payment_status:$('est-status').value,
+    notes:($('est-notes').value||'')+' | Subtotal: '+fc(sub)+' | Fee: '+fee+'% | Contingency: '+cont+'%',
+    created_at:new Date().toISOString()};
+  const all=gd('rw_income');all.push(d);sd('rw_income',all);
+  $('est-success').style.display='block';
+  toast('Project saved to Income Tracker!');
+}
+function estReset(){$('est-success').style.display='none';estChecks={};estVals={};initNewProject();}
+
+// ═══════════════════ INIT ═══════════════════
 renderDashboard();
 $('dash-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
 </script>
