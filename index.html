@@ -208,6 +208,10 @@ tfoot td{padding:9px 12px;font-size:12px;font-weight:500}
 .est-review-item span:last-child{font-weight:500;color:var(--txt)}
 .ref-banner{background:var(--pg);border:1px solid var(--lg);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--mg);margin-bottom:12px}
 .sf-guide{background:var(--pg);border-radius:5px;padding:8px 12px;font-size:12px;color:var(--mg);margin-top:8px}
+/* FORMULAS */
+.fml-input{width:72px;padding:5px 8px;border:1px solid var(--mg);border-radius:5px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--txt);text-align:right}
+.fml-input:focus{outline:none;border-color:var(--dg);box-shadow:0 0 0 2px rgba(26,106,36,.12)}
+
 /* OVERHEAD inline edit */
 .inline-edit{background:transparent;border:none;border-bottom:1px dashed var(--border);font-family:'DM Sans',sans-serif;font-size:12.5px;width:80px;text-align:right;padding:2px 4px}
 .inline-edit:focus{outline:none;border-bottom-color:var(--mg)}
@@ -246,6 +250,8 @@ tfoot td{padding:9px 12px;font-size:12px;font-weight:500}
     <a onclick="nav('ip-systems')" id="nav-ip-systems"><span class="nav-icon">◉</span><span class="nav-label"> IP Systems</span></a>
     <a onclick="nav('cost-reference')" id="nav-cost-reference"><span class="nav-icon">⊞</span><span class="nav-label"> Cost Reference</span></a>
     <a onclick="nav('financial-summary')" id="nav-financial-summary"><span class="nav-icon">∑</span><span class="nav-label"> Financial Summary</span></a>
+    <div class="sb-section">Settings</div>
+    <a onclick="nav('formulas')" id="nav-formulas"><span class="nav-icon">ƒ</span><span class="nav-label"> Formulas</span></a>
   </nav>
 </div>
 
@@ -262,8 +268,6 @@ tfoot td{padding:9px 12px;font-size:12px;font-weight:500}
     <div class="kpi-grid" id="kpi-row1"></div>
     <div class="section-divider">Balance Sheet</div>
     <div class="kpi-grid" id="kpi-row2"></div>
-    <div class="section-divider">Overhead</div>
-    <div class="kpi-grid" id="kpi-row3"></div>
     <div class="section-divider">Performance</div>
     <div class="grid2">
       <div class="chart-card">
@@ -479,12 +483,15 @@ tfoot td{padding:9px 12px;font-size:12px;font-weight:500}
 
 <!-- OVERHEAD -->
 <div class="page" id="page-overhead">
-  <div class="page-header"><h1>Overhead Summary</h1></div>
+  <div class="page-header">
+    <h1>Overhead Summary</h1>
+    <button class="btn-ghost" onclick="openOHModal()">+ Add Item</button>
+  </div>
   <div class="page-content">
     <div class="summary-bar" id="overhead-summary"></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Category</th><th>Item</th><th>Monthly Cost ($)</th><th>Annual Total ($)</th><th>Notes</th></tr></thead>
+        <thead><tr><th>Category</th><th>Item</th><th>Monthly Cost ($)</th><th>Annual Total ($)</th><th>Notes</th><th>Actions</th></tr></thead>
         <tbody id="overhead-body"></tbody>
         <tfoot id="overhead-foot"></tfoot>
       </table>
@@ -492,11 +499,90 @@ tfoot td{padding:9px 12px;font-size:12px;font-weight:500}
   </div>
 </div>
 
+<!-- OVERHEAD MODAL -->
+<div id="oh-modal-overlay" onclick="closeOHModalOverlay(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:10px;width:480px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="background:var(--dg);color:#fff;padding:14px 20px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:center">
+      <h3 id="oh-modal-title" style="font-size:15px;font-weight:500">Add Overhead Item</h3>
+      <button onclick="$('oh-modal-overlay').style.display='none'" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div style="padding:20px">
+      <div class="form-row" style="margin-bottom:12px"><label>Category</label>
+        <input id="oh-cat" list="oh-cat-list" placeholder="e.g. Software, Insurance, Payroll"/>
+        <datalist id="oh-cat-list">
+          <option>Software</option><option>Rent/Office</option><option>Insurance</option>
+          <option>Marketing</option><option>Payroll</option><option>Misc</option>
+        </datalist>
+      </div>
+      <div class="form-row" style="margin-bottom:12px"><label>Item Name</label>
+        <input id="oh-item" placeholder="e.g. QuickBooks Subscription"/>
+      </div>
+      <div class="form-row" style="margin-bottom:12px"><label>Monthly Cost ($)</label>
+        <input type="number" id="oh-cost" step="0.01" placeholder="0.00" oninput="ohCalcAnnual()"/>
+      </div>
+      <div style="background:var(--pg);border-radius:6px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;font-size:13px">
+        <span style="color:var(--txt2)">Annual Total</span>
+        <strong id="oh-annual-display" style="color:var(--dg)">$0.00</strong>
+      </div>
+      <div class="form-row"><label>Notes / Vendor</label>
+        <input id="oh-notes" placeholder="e.g. Autodesk"/>
+      </div>
+    </div>
+    <div style="padding:0 20px 20px;display:flex;justify-content:space-between">
+      <button id="oh-delete-btn" style="display:none" class="btn btn-danger btn-sm" onclick="deleteOHItem()">Delete</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-outline" onclick="$('oh-modal-overlay').style.display='none'">Cancel</button>
+        <button class="btn btn-primary" onclick="saveOHItem()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- IP SYSTEMS -->
 <div class="page" id="page-ip-systems">
-  <div class="page-header"><h1>IP Systems Tracker</h1></div>
+  <div class="page-header">
+    <h1>IP Systems Tracker</h1>
+    <button class="btn-ghost" onclick="addIP()">+ Add Item</button>
+  </div>
   <div class="page-content">
     <div class="summary-bar" id="ip-summary"></div>
+
+    <!-- CA Average + Formula info bar -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--txt2);margin-bottom:6px;font-weight:500">Replacement Cost Formula</div>
+          <div style="font-family:monospace;font-size:13px;background:var(--pg);padding:6px 12px;border-radius:5px;color:var(--dg);font-weight:500">
+            Est. Hours × Hourly Rate = Replacement Cost
+          </div>
+        </div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap">
+          <div style="text-align:center">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt2);margin-bottom:3px">CA Rate — General</div>
+            <div id="ip-ca-general" style="font-size:18px;font-weight:600;color:var(--gold)">$85/hr</div>
+            <div style="font-size:10px;color:var(--txt2)">fallback when no rate</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt2);margin-bottom:3px">CA Rate — Arch/Eng</div>
+            <div id="ip-ca-arch" style="font-size:18px;font-weight:600;color:var(--gold)">$175/hr</div>
+            <div style="font-size:10px;color:var(--txt2)">code 01:1015</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt2);margin-bottom:3px">CA Rate — PM/Super</div>
+            <div id="ip-ca-pm" style="font-size:18px;font-weight:600;color:var(--gold)">$125/hr</div>
+            <div style="font-size:10px;color:var(--txt2)">code 01:1045</div>
+          </div>
+        </div>
+        <div>
+          <a onclick="nav('formulas')" style="font-size:12px;color:var(--mg);cursor:pointer;text-decoration:underline">Edit CA rates in Formulas →</a>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--txt2)">
+        <span style="background:var(--gold);color:#fff;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:500;margin-right:6px">CA</span>
+        Gold badge = California average rate applied — no historical data available. Click <strong>Edit</strong> on any row to update with actuals.
+      </div>
+    </div>
+
     <div class="filter-bar">
       <select id="ip-filter-div" onchange="renderIP()"><option value="">All Divisions</option></select>
     </div>
@@ -568,7 +654,195 @@ tfoot td{padding:9px 12px;font-size:12px;font-weight:500}
   </div>
 </div>
 
+<!-- FORMULAS -->
+<div class="page" id="page-formulas">
+  <div class="page-header">
+    <h1>Formulas &amp; Settings</h1>
+    <span style="font-size:11px;opacity:.7">Edit multipliers to customize how calculations work across the dashboard</span>
+  </div>
+  <div class="page-content">
+
+    <div style="background:var(--pg);border:1px solid var(--lg);border-radius:8px;padding:12px 18px;font-size:12.5px;color:var(--mg);margin-bottom:20px">
+      ✓ Changes save instantly. All dashboards and summaries update automatically when you navigate back to them.
+    </div>
+
+    <!-- EDITABLE MULTIPLIERS -->
+    <div class="section-divider">Editable Multipliers</div>
+    <div class="table-wrap" style="margin-bottom:20px">
+      <table>
+        <thead><tr><th style="width:25%">Setting</th><th style="width:35%">What It Does</th><th style="width:20%">Current Value</th><th>Used On</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>EBITDA Multiplier</strong></td>
+            <td style="font-size:12px;color:var(--txt2)">(All Revenue − All Expenses) × this number = Estimated Equity</td>
+            <td><div style="display:flex;align-items:center;gap:6px"><input type="number" id="fml-ebitda" class="fml-input" value="3" min="1" max="20" step="0.5"/><span style="font-size:12px;color:var(--txt2)">×</span></div></td>
+            <td style="font-size:12px">Dashboard — Est. Equity KPI</td>
+          </tr>
+          <tr>
+            <td><strong>Default Contingency %</strong></td>
+            <td style="font-size:12px;color:var(--txt2)">Pre-fills the Contingency dropdown in New Project Estimator</td>
+            <td><div style="display:flex;align-items:center;gap:6px"><input type="number" id="fml-contingency" class="fml-input" value="5" min="0" max="30" step="1"/><span style="font-size:12px;color:var(--txt2)">%</span></div></td>
+            <td style="font-size:12px">New Project Estimator</td>
+          </tr>
+          <tr>
+            <td><strong>Default Builder Fee %</strong></td>
+            <td style="font-size:12px;color:var(--txt2)">Pre-fills the Builder Fee dropdown in New Project Estimator</td>
+            <td><div style="display:flex;align-items:center;gap:6px"><input type="number" id="fml-builder-fee" class="fml-input" value="12" min="0" max="30" step="0.5"/><span style="font-size:12px;color:var(--txt2)">%</span></div></td>
+            <td style="font-size:12px">New Project Estimator</td>
+          </tr>
+          <tr>
+            <td><strong>CA Rate — General Labor</strong></td>
+            <td style="font-size:12px;color:var(--txt2)">Fallback hourly rate applied to IP Systems items with no historical rate</td>
+            <td><div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;color:var(--txt2)">$</span><input type="number" id="fml-ca-general" class="fml-input" value="85" min="1" step="1"/><span style="font-size:12px;color:var(--txt2)">/hr</span></div></td>
+            <td style="font-size:12px">IP Systems (CA badge)</td>
+          </tr>
+          <tr>
+            <td><strong>CA Rate — Arch / Eng</strong></td>
+            <td style="font-size:12px;color:var(--txt2)">Fallback rate for code 01:1015 (Arch &amp; Engineering)</td>
+            <td><div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;color:var(--txt2)">$</span><input type="number" id="fml-ca-arch" class="fml-input" value="175" min="1" step="1"/><span style="font-size:12px;color:var(--txt2)">/hr</span></div></td>
+            <td style="font-size:12px">IP Systems (CA badge)</td>
+          </tr>
+          <tr>
+            <td><strong>CA Rate — PM / Supervision</strong></td>
+            <td style="font-size:12px;color:var(--txt2)">Fallback rate for code 01:1045 (Supervision)</td>
+            <td><div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;color:var(--txt2)">$</span><input type="number" id="fml-ca-pm" class="fml-input" value="125" min="1" step="1"/><span style="font-size:12px;color:var(--txt2)">/hr</span></div></td>
+            <td style="font-size:12px">IP Systems (CA badge)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:28px">
+      <button class="btn btn-primary" onclick="saveFormulas()">Save Changes</button>
+      <button class="btn btn-outline" onclick="resetFormulas()">Reset to Defaults</button>
+    </div>
+    <div id="fml-saved" style="display:none;margin-top:-16px;margin-bottom:20px;padding:10px 14px;background:var(--pg);border-radius:6px;font-size:13px;color:var(--mg)">
+      ✓ Saved. Navigate to any page to see updated calculations.
+    </div>
+
+    <!-- FORMULA REFERENCE -->
+    <div class="section-divider">Income Calculations</div>
+    <div class="table-wrap" style="margin-bottom:20px">
+      <table>
+        <thead><tr><th style="width:25%">Formula</th><th style="width:40%">How It's Calculated</th><th>Used On</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Invoice Amount</strong></td><td style="font-family:monospace;font-size:12px">Est. Hours × Hourly Rate</td><td>Income Tracker, New Project</td></tr>
+          <tr><td><strong>Monthly Revenue</strong></td><td style="font-family:monospace;font-size:12px">Sum of all Paid invoices in current month</td><td>Dashboard KPI</td></tr>
+          <tr><td><strong>Outstanding Balance</strong></td><td style="font-family:monospace;font-size:12px">Total Invoiced − Total Paid</td><td>Dashboard, Income Tracker</td></tr>
+          <tr><td><strong>YTD Revenue</strong></td><td style="font-family:monospace;font-size:12px">Sum of all Paid invoices this calendar year</td><td>Financial Summary</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-divider">Financial KPI Calculations</div>
+    <div class="table-wrap" style="margin-bottom:20px">
+      <table>
+        <thead><tr><th style="width:25%">Formula</th><th style="width:40%">How It's Calculated</th><th>Used On</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Net Income</strong></td><td style="font-family:monospace;font-size:12px">Monthly Revenue − Monthly Expenses</td><td>Dashboard, Financial Summary</td></tr>
+          <tr><td><strong>Profit Margin %</strong></td><td style="font-family:monospace;font-size:12px">Net Income ÷ Revenue × 100</td><td>Financial Summary</td></tr>
+          <tr><td><strong>Est. Equity</strong></td><td style="font-family:monospace;font-size:12px">(All Revenue − All Expenses) × EBITDA Multiplier</td><td>Dashboard KPI</td></tr>
+          <tr><td><strong>Burn Rate Coverage</strong></td><td style="font-family:monospace;font-size:12px">Monthly Revenue ÷ Monthly Overhead</td><td>Financial Summary</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-divider">Asset &amp; Liability Calculations</div>
+    <div class="table-wrap" style="margin-bottom:20px">
+      <table>
+        <thead><tr><th style="width:25%">Formula</th><th style="width:40%">How It's Calculated</th><th>Used On</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Annual Depreciation</strong></td><td style="font-family:monospace;font-size:12px">(Purchase Cost − Current Value) ÷ Useful Life (yrs)</td><td>Asset Register</td></tr>
+          <tr><td><strong>Annual Interest</strong></td><td style="font-family:monospace;font-size:12px">Balance × Interest Rate</td><td>Liability Tracker</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-divider">Project Estimator Calculations</div>
+    <div class="table-wrap" style="margin-bottom:20px">
+      <table>
+        <thead><tr><th style="width:25%">Formula</th><th style="width:40%">How It's Calculated</th><th>Used On</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Project Subtotal</strong></td><td style="font-family:monospace;font-size:12px">Sum of all checked line items across all CSI divisions</td><td>New Project Estimator</td></tr>
+          <tr><td><strong>Contingency Amount</strong></td><td style="font-family:monospace;font-size:12px">Subtotal × Contingency %</td><td>New Project Estimator</td></tr>
+          <tr><td><strong>Builder Fee</strong></td><td style="font-family:monospace;font-size:12px">(Subtotal + Contingency) × Builder Fee %</td><td>New Project Estimator</td></tr>
+          <tr><td><strong>Total Contract</strong></td><td style="font-family:monospace;font-size:12px">Subtotal + Contingency + Builder Fee</td><td>New Project Estimator</td></tr>
+          <tr><td><strong>Cost Per SF</strong></td><td style="font-family:monospace;font-size:12px">Total Contract ÷ Square Footage entered</td><td>New Project Review</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-divider">IP Systems Calculations</div>
+    <div class="table-wrap" style="margin-bottom:20px">
+      <table>
+        <thead><tr><th style="width:25%">Formula</th><th style="width:40%">How It's Calculated</th><th>Used On</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Replacement Cost</strong></td><td style="font-family:monospace;font-size:12px">Est. Hours × Hourly Rate</td><td>IP Systems Tracker</td></tr>
+          <tr><td><strong>Total IP Value</strong></td><td style="font-family:monospace;font-size:12px">Sum of all Replacement Costs</td><td>Dashboard KPI</td></tr>
+          <tr><td><strong>CA Average Fallback</strong></td><td style="font-family:monospace;font-size:12px">Applied when historical rate is missing — editable above</td><td>IP Systems (gold CA badge)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
 </div><!-- #main -->
+
+<!-- IP EDIT MODAL -->
+<div id="ip-modal-overlay" onclick="closeIPModal(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:10px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="background:var(--dg);color:#fff;padding:14px 20px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:center">
+      <h3 style="font-size:15px;font-weight:500">Edit IP Systems Item</h3>
+      <button onclick="$('ip-modal-overlay').style.display='none'" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div style="padding:20px">
+      <div style="background:var(--pg);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--mg);margin-bottom:16px">
+        Changes save instantly and update the IP Systems Tracker and all related calculations.
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>CSI Code</label><input id="ip-edit-code" style="font-family:monospace"/></div>
+        <div class="form-row"><label>Division</label>
+          <select id="ip-edit-division">
+            <option>General Conditions</option><option>Sitework</option><option>Concrete</option>
+            <option>Masonry</option><option>Metals</option><option>Wood &amp; Plastics</option>
+            <option>Thermal &amp; Moisture</option><option>Doors &amp; Windows</option>
+            <option>Finishes</option><option>Specialties</option><option>Equipment</option>
+            <option>Furnishings</option><option>Special Construction</option>
+            <option>Conveying</option><option>Mechanical</option><option>Electrical</option>
+            <option>Custom</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:10px"><label>Name / Description</label><input id="ip-edit-name"/></div>
+      <div class="form-grid" style="margin-top:10px">
+        <div class="form-row"><label>Estimated Hours</label><input type="number" step="0.1" id="ip-edit-hrs" oninput="ipModalCalc()"/></div>
+        <div class="form-row"><label>Hourly Rate ($)</label><input type="number" step="0.01" id="ip-edit-rate" oninput="ipModalCalc()"/></div>
+      </div>
+      <div class="form-row" style="margin-top:10px"><label>Historical Average Total ($)</label><input type="number" step="0.01" id="ip-edit-avg-total"/></div>
+      <div style="background:var(--pg);border:1px solid var(--lg);border-radius:6px;padding:12px 14px;margin-top:12px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
+          <span style="color:var(--txt2)">Replacement Cost (Hours × Rate)</span>
+          <strong id="ip-edit-rc" style="color:var(--dg);font-size:16px">$0.00</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;align-items:center">
+          <span style="color:var(--txt2)">Mark as CA Average fallback</span>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="ip-edit-ca" style="width:14px;height:14px;accent-color:var(--gold)"/>
+            <span style="font-size:12px;color:var(--txt2)">Show gold CA badge</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div style="padding:0 20px 20px;display:flex;justify-content:space-between;align-items:center">
+      <button id="ip-delete-btn" class="btn btn-danger btn-sm" onclick="deleteIPItem()">Delete Item</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" onclick="$('ip-modal-overlay').style.display='none'">Cancel</button>
+        <button class="btn btn-primary" onclick="saveIPItem()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL -->
 <div id="modal-overlay" onclick="closeModalOnOverlay(event)">
@@ -590,73 +864,85 @@ tfoot td{padding:9px 12px;font-size:12px;font-weight:500}
 <script>
 // ═══════════════════ DATA ═══════════════════
 const CSI_SEED=[
-  {"code":"01:1015","name":"Arch & Engineering","division":"General Conditions","avg_total":18092.18,"avg_hrs":null,"hourly_rate":null},
-  {"code":"01:1040","name":"Client Support & Selection Development","division":"General Conditions","avg_total":36785.23,"avg_hrs":595.3,"hourly_rate":74},
-  {"code":"01:1045","name":"Supervision","division":"General Conditions","avg_total":54082.03,"avg_hrs":2189.8,"hourly_rate":76.5},
-  {"code":"01:1510","name":"Temporary Utilities","division":"General Conditions","avg_total":3633.17,"avg_hrs":4031.7,"hourly_rate":null},
-  {"code":"01:1512","name":"General Labor","division":"General Conditions","avg_total":15734.47,"avg_hrs":583.9,"hourly_rate":54},
-  {"code":"01:1560","name":"Daily Jobsite Cleanup","division":"General Conditions","avg_total":13524.8,"avg_hrs":399.3,"hourly_rate":54},
-  {"code":"01:1565","name":"Landfill and Recycling","division":"General Conditions","avg_total":3932.21,"avg_hrs":3887.5,"hourly_rate":null},
-  {"code":"02:2110","name":"Hauling","division":"Sitework","avg_total":80256.83,"avg_hrs":null,"hourly_rate":null},
-  {"code":"02:2210","name":"Grading","division":"Sitework","avg_total":73653.97,"avg_hrs":null,"hourly_rate":null},
-  {"code":"02:2212","name":"Finish Grading","division":"Sitework","avg_total":4926.89,"avg_hrs":null,"hourly_rate":null},
-  {"code":"02:2270","name":"Erosion Control","division":"Sitework","avg_total":9689.8,"avg_hrs":null,"hourly_rate":null},
-  {"code":"02:2500","name":"Paving","division":"Sitework","avg_total":59892.71,"avg_hrs":null,"hourly_rate":7.18},
-  {"code":"02:2670","name":"Water Well","division":"Sitework","avg_total":23030.92,"avg_hrs":null,"hourly_rate":null},
-  {"code":"02:2740","name":"Septic","division":"Sitework","avg_total":25766.05,"avg_hrs":1350,"hourly_rate":15.45},
-  {"code":"02:2780","name":"General Utilities","division":"Sitework","avg_total":59612.03,"avg_hrs":null,"hourly_rate":null},
-  {"code":"02:2830","name":"Fences","division":"Sitework","avg_total":39973.51,"avg_hrs":null,"hourly_rate":null},
-  {"code":"02:2900","name":"Landscaping","division":"Sitework","avg_total":152879.25,"avg_hrs":null,"hourly_rate":null},
-  {"code":"03:3100","name":"Concrete","division":"Concrete","avg_total":238842.7,"avg_hrs":null,"hourly_rate":null},
-  {"code":"03:3320","name":"Flatwork","division":"Concrete","avg_total":49159.29,"avg_hrs":null,"hourly_rate":null},
-  {"code":"03:3350","name":"Concrete Floor Finishing","division":"Concrete","avg_total":11292.87,"avg_hrs":null,"hourly_rate":6.93},
-  {"code":"04:4200","name":"Masonry","division":"Masonry","avg_total":44994.68,"avg_hrs":1060,"hourly_rate":46.19},
-  {"code":"04:4450","name":"Stone Veneer Masonry","division":"Masonry","avg_total":162350.08,"avg_hrs":1060,"hourly_rate":55.15},
-  {"code":"04:4465","name":"Granite Surfaces","division":"Masonry","avg_total":27082.73,"avg_hrs":null,"hourly_rate":null},
-  {"code":"05:5100","name":"Structural Metal","division":"Metals","avg_total":116394.99,"avg_hrs":null,"hourly_rate":null},
-  {"code":"05:5700","name":"Ornamental Ironwork","division":"Metals","avg_total":29168.09,"avg_hrs":null,"hourly_rate":null},
-  {"code":"06:6100","name":"Framing Materials and Labor","division":"Wood & Plastics","avg_total":211434.82,"avg_hrs":3563.9,"hourly_rate":59.54},
-  {"code":"06:6110","name":"Siding Materials & Labor","division":"Wood & Plastics","avg_total":56449.93,"avg_hrs":1846.5,"hourly_rate":24.16},
-  {"code":"06:6110b","name":"Siding - Metals","division":"Wood & Plastics","avg_total":87486.76,"avg_hrs":2275,"hourly_rate":41.63},
-  {"code":"06:6120","name":"Decking Materials & Labor","division":"Wood & Plastics","avg_total":25266.8,"avg_hrs":300,"hourly_rate":34.68},
-  {"code":"06:6200","name":"Finish Carpentry","division":"Wood & Plastics","avg_total":28289.66,"avg_hrs":null,"hourly_rate":null},
-  {"code":"06:6400","name":"Cabinets","division":"Wood & Plastics","avg_total":119935.13,"avg_hrs":null,"hourly_rate":null},
-  {"code":"07:7200","name":"Insulation","division":"Thermal & Moisture","avg_total":42359.32,"avg_hrs":3862.3,"hourly_rate":13.28},
-  {"code":"07:7300a","name":"Roofing - Tile","division":"Thermal & Moisture","avg_total":127489.28,"avg_hrs":7324.8,"hourly_rate":16.1},
-  {"code":"07:7300b","name":"Roofing - Metal","division":"Thermal & Moisture","avg_total":117252.3,"avg_hrs":4842,"hourly_rate":12.74},
+  {"code":"01:1005","name":"Preliminary Estimating","division":"General Conditions","avg_total":0,"avg_hrs":null,"hourly_rate":null},
+  {"code":"01:1007","name":"Final Estimate","division":"General Conditions","avg_total":0,"avg_hrs":null,"hourly_rate":null},
+  {"code":"01:1010","name":"Precon Design Development","division":"General Conditions","avg_total":0,"avg_hrs":null,"hourly_rate":null},
+  {"code":"01:1015","name":"Arch & Engineering","division":"General Conditions","avg_total":18092,"avg_hrs":13500,"hourly_rate":18439},
+  {"code":"01:1040","name":"Client Support & Selection Development","division":"General Conditions","avg_total":0,"avg_hrs":null,"hourly_rate":null},
+  {"code":"01:1045","name":"Supervision","division":"General Conditions","avg_total":36785,"avg_hrs":595,"hourly_rate":74},
+  {"code":"01:1510","name":"Temporary Utilities","division":"General Conditions","avg_total":54082,"avg_hrs":2190,"hourly_rate":77},
+  {"code":"01:1512","name":"General Labor","division":"General Conditions","avg_total":3633,"avg_hrs":4032,"hourly_rate":11258},
+  {"code":"01:1560","name":"Daily Jobsite Cleanup","division":"General Conditions","avg_total":15734,"avg_hrs":584,"hourly_rate":54},
+  {"code":"01:1565","name":"Landfill and Recycling","division":"General Conditions","avg_total":13525,"avg_hrs":399,"hourly_rate":54},
+  {"code":"02:2110","name":"Hauling","division":"Sitework","avg_total":80257,"avg_hrs":null,"hourly_rate":null},
+  {"code":"02:2210","name":"Grading","division":"Sitework","avg_total":73654,"avg_hrs":null,"hourly_rate":null},
+  {"code":"02:2212","name":"Finish Grading","division":"Sitework","avg_total":4927,"avg_hrs":null,"hourly_rate":null},
+  {"code":"02:2270","name":"Erosion Control","division":"Sitework","avg_total":9690,"avg_hrs":null,"hourly_rate":null},
+  {"code":"02:2500","name":"Paving","division":"Sitework","avg_total":59893,"avg_hrs":15450,"hourly_rate":7},
+  {"code":"02:2670","name":"Water Well","division":"Sitework","avg_total":23031,"avg_hrs":null,"hourly_rate":null},
+  {"code":"02:2740","name":"Septic","division":"Sitework","avg_total":25766,"avg_hrs":1350,"hourly_rate":15},
+  {"code":"02:2780","name":"General Utilities","division":"Sitework","avg_total":59612,"avg_hrs":null,"hourly_rate":null},
+  {"code":"02:2830","name":"Fences","division":"Sitework","avg_total":39974,"avg_hrs":null,"hourly_rate":null},
+  {"code":"02:2900","name":"Landscaping","division":"Sitework","avg_total":152879,"avg_hrs":null,"hourly_rate":null},
+  {"code":"03:3100","name":"Concrete","division":"Concrete","avg_total":238843,"avg_hrs":null,"hourly_rate":null},
+  {"code":"03:3320","name":"Flatwork","division":"Concrete","avg_total":49159,"avg_hrs":null,"hourly_rate":null},
+  {"code":"03:3350","name":"Concrete Floor Finishing","division":"Concrete","avg_total":11293,"avg_hrs":null,"hourly_rate":7},
+  {"code":"04:4200","name":"Masonry","division":"Masonry","avg_total":44995,"avg_hrs":1060,"hourly_rate":46},
+  {"code":"04:4450","name":"Stone Veneer Masonry","division":"Masonry","avg_total":162350,"avg_hrs":1060,"hourly_rate":55},
+  {"code":"04:4465","name":"Granite Surfaces","division":"Masonry","avg_total":27083,"avg_hrs":null,"hourly_rate":null},
+  {"code":"05:5100","name":"Structural Metal","division":"Metals","avg_total":116395,"avg_hrs":null,"hourly_rate":null},
+  {"code":"05:5700","name":"Ornamental Ironwork","division":"Metals","avg_total":29168,"avg_hrs":null,"hourly_rate":null},
+  {"code":"06:6100","name":"Framing Materials and Labor","division":"Wood & Plastics","avg_total":211435,"avg_hrs":3564,"hourly_rate":59.54},
+  {"code":"06:6110","name":"Siding Materials","division":"Wood & Plastics","avg_total":56450,"avg_hrs":1847,"hourly_rate":24.16},
+  {"code":"06:6111","name":"Siding Labor","division":"Wood & Plastics","avg_total":87487,"avg_hrs":2275,"hourly_rate":41.63},
+  {"code":"06:6113","name":"Set Windows","division":"Wood & Plastics","avg_total":0,"avg_hrs":null,"hourly_rate":null},
+  {"code":"06:6120","name":"Decking Materials & Labor","division":"Wood & Plastics","avg_total":25267,"avg_hrs":300,"hourly_rate":34.68},
+  {"code":"06:6190","name":"Trusses","division":"Wood & Plastics","avg_total":0,"avg_hrs":null,"hourly_rate":null},
+  {"code":"06:6200","name":"Finish Carpentry Materials and Labor","division":"Wood & Plastics","avg_total":28290,"avg_hrs":null,"hourly_rate":null},
+  {"code":"06:6215","name":"Hang Doors","division":"Wood & Plastics","avg_total":0,"avg_hrs":null,"hourly_rate":null},
+  {"code":"06:6219","name":"Finish Materials","division":"Wood & Plastics","avg_total":0,"avg_hrs":null,"hourly_rate":null},
+  {"code":"06:6400","name":"Cabinets","division":"Wood & Plastics","avg_total":119935,"avg_hrs":null,"hourly_rate":null},
+  {"code":"07:7100","name":"Waterproofing","division":"Thermal & Moisture","avg_total":0,"avg_hrs":null,"hourly_rate":null},
+  {"code":"07:7200","name":"Insulation","division":"Thermal & Moisture","avg_total":42359,"avg_hrs":3862,"hourly_rate":13.28},
+  {"code":"07:7300a","name":"Roofing - Tile","division":"Thermal & Moisture","avg_total":127489,"avg_hrs":7325,"hourly_rate":16.10},
+  {"code":"07:7300b","name":"Roofing - Metal","division":"Thermal & Moisture","avg_total":117252,"avg_hrs":4842,"hourly_rate":12.74},
   {"code":"07:7300c","name":"Roofing - Composite","division":"Thermal & Moisture","avg_total":9970,"avg_hrs":1831,"hourly_rate":5.94},
-  {"code":"07:7300d","name":"Roofing - Flat","division":"Thermal & Moisture","avg_total":40910.7,"avg_hrs":2327,"hourly_rate":17.27},
+  {"code":"07:7300d","name":"Roofing - Flat","division":"Thermal & Moisture","avg_total":40911,"avg_hrs":2327,"hourly_rate":17.27},
   {"code":"07:7300e","name":"Roofing - ALX","division":"Thermal & Moisture","avg_total":20625,"avg_hrs":554,"hourly_rate":47.19},
-  {"code":"08:8200","name":"Interior Doors","division":"Doors & Windows","avg_total":48442.6,"avg_hrs":null,"hourly_rate":null},
-  {"code":"08:8330","name":"Exterior Doors","division":"Doors & Windows","avg_total":12623.91,"avg_hrs":null,"hourly_rate":null},
-  {"code":"08:8600","name":"Windows","division":"Doors & Windows","avg_total":51636.57,"avg_hrs":3559.7,"hourly_rate":18.17},
-  {"code":"09:9200","name":"Stucco","division":"Finishes","avg_total":64309.49,"avg_hrs":2915.5,"hourly_rate":11.48},
-  {"code":"09:9201","name":"Interior Plastering","division":"Finishes","avg_total":45753.54,"avg_hrs":null,"hourly_rate":null},
-  {"code":"09:9250","name":"Drywall","division":"Finishes","avg_total":35765.48,"avg_hrs":8745,"hourly_rate":3.23},
-  {"code":"09:9300","name":"Tile","division":"Finishes","avg_total":101710.14,"avg_hrs":865,"hourly_rate":130.98},
-  {"code":"09:9550","name":"Wood Floors","division":"Finishes","avg_total":41097.61,"avg_hrs":1664.7,"hourly_rate":22.4},
-  {"code":"09:9650","name":"Resilient Flooring","division":"Finishes","avg_total":10993.91,"avg_hrs":1413.7,"hourly_rate":9.7},
-  {"code":"09:9680","name":"Carpets","division":"Finishes","avg_total":6351.82,"avg_hrs":250.5,"hourly_rate":27.84},
-  {"code":"09:9900","name":"Painting","division":"Finishes","avg_total":39885.23,"avg_hrs":3043.6,"hourly_rate":13.34},
-  {"code":"10:10300","name":"Fireplace Mat & Labor","division":"Specialties","avg_total":16316.67,"avg_hrs":null,"hourly_rate":null},
-  {"code":"10:10822","name":"Shower Enclosures","division":"Specialties","avg_total":4879.86,"avg_hrs":null,"hourly_rate":null},
-  {"code":"10:10900","name":"Closets","division":"Specialties","avg_total":5060.93,"avg_hrs":null,"hourly_rate":null},
-  {"code":"11:11200","name":"Water Treatment","division":"Equipment","avg_total":6328.66,"avg_hrs":null,"hourly_rate":null},
-  {"code":"11:11452","name":"Appliances","division":"Equipment","avg_total":30347.67,"avg_hrs":null,"hourly_rate":null},
-  {"code":"13:13170","name":"Spa","division":"Special Construction","avg_total":17520,"avg_hrs":null,"hourly_rate":null},
-  {"code":"13:13180","name":"Pool","division":"Special Construction","avg_total":342218,"avg_hrs":628,"hourly_rate":null},
-  {"code":"13:13602","name":"PV Solar","division":"Special Construction","avg_total":42197.5,"avg_hrs":7.1,"hourly_rate":null},
-  {"code":"13:13800","name":"Safety (FRP)","division":"Special Construction","avg_total":10968.46,"avg_hrs":991,"hourly_rate":11.07},
-  {"code":"13:13900","name":"Fire Sprinklers","division":"Special Construction","avg_total":7455.39,"avg_hrs":3131.1,"hourly_rate":2.81},
-  {"code":"14:14100","name":"Elevators","division":"Conveying","avg_total":80000,"avg_hrs":null,"hourly_rate":null},
-  {"code":"15:15400","name":"Plumbing","division":"Mechanical","avg_total":58628.27,"avg_hrs":2630.8,"hourly_rate":20.69},
-  {"code":"15:15401","name":"Plumbing Fixtures","division":"Mechanical","avg_total":18412.11,"avg_hrs":null,"hourly_rate":null},
-  {"code":"15:15500","name":"HVAC","division":"Mechanical","avg_total":56872.2,"avg_hrs":2863.6,"hourly_rate":19.99},
+  {"code":"08:8200","name":"Interior Doors","division":"Doors & Windows","avg_total":48443,"avg_hrs":null,"hourly_rate":null},
+  {"code":"08:8330","name":"Exterior Doors","division":"Doors & Windows","avg_total":12624,"avg_hrs":2,"hourly_rate":6128},
+  {"code":"08:8330b","name":"Garage Doors","division":"Doors & Windows","avg_total":0,"avg_hrs":null,"hourly_rate":null},
+  {"code":"08:8600","name":"Windows","division":"Doors & Windows","avg_total":51637,"avg_hrs":3560,"hourly_rate":18.17},
+  {"code":"09:9200","name":"Stucco","division":"Finishes","avg_total":64309,"avg_hrs":2916,"hourly_rate":11.48},
+  {"code":"09:9201","name":"Interior Plastering","division":"Finishes","avg_total":45754,"avg_hrs":null,"hourly_rate":null},
+  {"code":"09:9250","name":"Drywall","division":"Finishes","avg_total":35765,"avg_hrs":8745,"hourly_rate":3.23},
+  {"code":"09:9300","name":"Tile","division":"Finishes","avg_total":101710,"avg_hrs":865,"hourly_rate":130.98},
+  {"code":"09:9550","name":"Wood Flooring","division":"Finishes","avg_total":41098,"avg_hrs":1665,"hourly_rate":22.40},
+  {"code":"09:9650","name":"Resilient Flooring","division":"Finishes","avg_total":10994,"avg_hrs":1414,"hourly_rate":9.70},
+  {"code":"09:9680","name":"Carpets","division":"Finishes","avg_total":6352,"avg_hrs":251,"hourly_rate":27.84},
+  {"code":"09:9900","name":"Painting","division":"Finishes","avg_total":39885,"avg_hrs":3044,"hourly_rate":13.34},
+  {"code":"10:10300","name":"Fireplace Mat & Labor","division":"Specialties","avg_total":16317,"avg_hrs":1,"hourly_rate":11330},
+  {"code":"10:10822","name":"Shower Enclosures","division":"Specialties","avg_total":4880,"avg_hrs":2,"hourly_rate":2027},
+  {"code":"10:10900","name":"Closet","division":"Specialties","avg_total":5061,"avg_hrs":null,"hourly_rate":null},
+  {"code":"11:11200","name":"Water Treatment","division":"Equipment","avg_total":6329,"avg_hrs":3,"hourly_rate":3075},
+  {"code":"11:11452","name":"Appliances","division":"Equipment","avg_total":30348,"avg_hrs":null,"hourly_rate":null},
+  {"code":"11:11880","name":"Rental Equipment","division":"Equipment","avg_total":0,"avg_hrs":null,"hourly_rate":null},
+  {"code":"12:12500","name":"Window Treatment","division":"Furnishings","avg_total":0,"avg_hrs":null,"hourly_rate":null},
+  {"code":"13:12170","name":"Spa","division":"Special Construction","avg_total":17520,"avg_hrs":1,"hourly_rate":17520},
+  {"code":"13:13180","name":"Pool","division":"Special Construction","avg_total":342218,"avg_hrs":628,"hourly_rate":528},
+  {"code":"13:13600","name":"PV Solar","division":"Special Construction","avg_total":42197,"avg_hrs":7,"hourly_rate":6429},
+  {"code":"13:13800","name":"Safety (FRP)","division":"Special Construction","avg_total":10968,"avg_hrs":991,"hourly_rate":11},
+  {"code":"13:12900","name":"Fire Sprinklers","division":"Special Construction","avg_total":7455,"avg_hrs":3131,"hourly_rate":3},
+  {"code":"14:14100","name":"Elevators","division":"Conveying","avg_total":80000,"avg_hrs":3,"hourly_rate":26667},
+  {"code":"14:14100b","name":"Dumbwaiters","division":"Conveying","avg_total":0,"avg_hrs":null,"hourly_rate":null},
+  {"code":"15:15400","name":"Plumbing","division":"Mechanical","avg_total":58628,"avg_hrs":2631,"hourly_rate":21},
+  {"code":"15:15401","name":"Plumbing Fixtures","division":"Mechanical","avg_total":18412,"avg_hrs":null,"hourly_rate":null},
+  {"code":"15:15500","name":"HVAC","division":"Mechanical","avg_total":56872,"avg_hrs":2864,"hourly_rate":20},
   {"code":"15:15515","name":"Hydronic Heating","division":"Mechanical","avg_total":42123,"avg_hrs":null,"hourly_rate":null},
-  {"code":"16:16200","name":"Back Up Power","division":"Electrical","avg_total":25818.5,"avg_hrs":null,"hourly_rate":null},
-  {"code":"16:16400","name":"Electrical","division":"Electrical","avg_total":101941.94,"avg_hrs":3541.2,"hourly_rate":29.86},
-  {"code":"16:16401","name":"Light Fixtures","division":"Electrical","avg_total":14182.82,"avg_hrs":null,"hourly_rate":null},
-  {"code":"16:16700","name":"Low Voltage","division":"Electrical","avg_total":64155.37,"avg_hrs":4985.2,"hourly_rate":12.25}
+  {"code":"16:16200","name":"Back Up Power","division":"Electrical","avg_total":25819,"avg_hrs":null,"hourly_rate":null},
+  {"code":"16:16400","name":"Electrical","division":"Electrical","avg_total":101942,"avg_hrs":3541,"hourly_rate":30},
+  {"code":"16:16401","name":"Electrical Fixture","division":"Electrical","avg_total":14183,"avg_hrs":null,"hourly_rate":null},
+  {"code":"16:16700","name":"Low Voltage","division":"Electrical","avg_total":64155,"avg_hrs":4985,"hourly_rate":12}
 ];
 
 const OH_SEED=[
@@ -968,7 +1254,8 @@ function nav(page){
     dashboard:renderDashboard,income:renderIncome,expenses:renderExpenses,
     assets:renderAssets,liabilities:renderLiabilities,overhead:renderOverhead,
     'ip-systems':renderIP,'financial-summary':renderFinancial,
-    'cost-reference':renderCostRef,'new-project':initNewProject
+    'cost-reference':renderCostRef,'new-project':initNewProject,
+    'formulas':renderFormulas
   };
   if(renders[page])renders[page]();
 }
@@ -991,7 +1278,7 @@ function toast(msg,type='success'){
 let revChart=null;
 function renderDashboard(){
   $('dash-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-  const income=gd('rw_income'),expenses=gd('rw_expenses'),assets=gd('rw_assets'),liabilities=gd('rw_liabilities'),overhead=gd('rw_oh'),ip=gd('rw_ip');
+  const income=gd('rw_income'),expenses=gd('rw_expenses'),assets=gd('rw_assets'),liabilities=gd('rw_liabilities'),ip=gd('rw_ip');
   const cm=curMonth();
   const monthRev=income.filter(r=>r.payment_status==='Paid'&&ym(r.date)===cm).reduce((s,r)=>s+(+r.invoice_amount||0),0);
   const monthExp=expenses.filter(r=>ym(r.date)===cm).reduce((s,r)=>s+(+r.amount||0),0);
@@ -1000,8 +1287,7 @@ function renderDashboard(){
   const totalLiab=liabilities.reduce((s,r)=>s+(+r.balance||0),0);
   const allRev=income.filter(r=>r.payment_status==='Paid').reduce((s,r)=>s+(+r.invoice_amount||0),0);
   const allExp=expenses.reduce((s,r)=>s+(+r.amount||0),0);
-  const equity=(allRev-allExp)*3;
-  const burnRate=overhead.reduce((s,r)=>s+(+r.monthly_cost||0),0);
+  const equity=(allRev-allExp)*getFml('ebitda');
   const ipVal=ip.reduce((s,r)=>s+((+r.avg_hrs||0)*(+r.hourly_rate||0)),0);
 
   function kpi(label,val,sub,cls='',cardCls=''){
@@ -1014,11 +1300,7 @@ function renderDashboard(){
   $('kpi-row2').innerHTML=
     kpi('Total Assets',fc(totalAssets),'From Asset Register','pos')+
     kpi('Total Liabilities',fc(totalLiab),'From Liability Tracker','neg','red')+
-    kpi('Est. Equity (3×EBITDA)',fc(equity),'Valuation estimate',equity>=0?'pos':'neg');
-  $('kpi-row3').innerHTML=
-    kpi('Monthly Burn Rate',fc(burnRate),'Fixed overhead','neg','red')+
-    kpi('Total IP Value',fc(ipVal),'Replacement cost of all systems','pos')+
-    kpi('Annual Overhead',fc(burnRate*12),'Total fixed costs per year','neg','red');
+    kpi('Est. Equity ('+getFml('ebitda')+'× EBITDA)',fc(equity),'Valuation estimate',equity>=0?'pos':'neg');
 
   // Chart
   const months=[],revData=[],expData=[];
@@ -1193,10 +1475,27 @@ function updateOverhead(id,val){
 
 // ═══════════════════ IP SYSTEMS ═══════════════════
 function renderIP(){
+  const DIV_NUM={
+    'General Conditions':'01','Sitework':'02','Concrete':'03','Masonry':'04',
+    'Metals':'05','Wood & Plastics':'06','Thermal & Moisture':'07','Doors & Windows':'08',
+    'Finishes':'09','Specialties':'10','Equipment':'11','Furnishings':'12',
+    'Special Construction':'13','Conveying':'14','Mechanical':'15','Electrical':'16'
+  };
+  // Update CA rate display from saved formula values
+  const caG=$('ip-ca-general'),caA=$('ip-ca-arch'),caP=$('ip-ca-pm');
+  if(caG)caG.textContent='$'+getFml('ca_general')+'/hr';
+  if(caA)caA.textContent='$'+getFml('ca_arch')+'/hr';
+  if(caP)caP.textContent='$'+getFml('ca_pm')+'/hr';
+
   const all=gd('rw_ip');
-  const divs=[...new Set(all.map(r=>r.division))].sort();
+  const divs=[...new Set(all.map(r=>r.division))].sort((a,b)=>{
+    const na=parseInt(DIV_NUM[a])||99,nb=parseInt(DIV_NUM[b])||99;return na-nb;
+  });
   const dSel=$('ip-filter-div');const curD=dSel.value;
-  dSel.innerHTML='<option value="">All Divisions</option>'+divs.map(d=>`<option value="${d}"${d===curD?' selected':''}>${d}</option>`).join('');
+  dSel.innerHTML='<option value="">All Divisions</option>'+divs.map(d=>{
+    const num=DIV_NUM[d]||'—';
+    return`<option value="${d}"${d===curD?' selected':''}>Div ${num} — ${d}</option>`;
+  }).join('');
   const df=dSel.value;
   const filtered=all.filter(r=>!df||r.division===df);
   const total=filtered.reduce((s,r)=>s+((+r.avg_hrs||0)*(+r.hourly_rate||0)),0);
@@ -1206,22 +1505,110 @@ function renderIP(){
     <div class="summary-item"><label>Avg Replacement</label><span>${fc(filtered.length?total/filtered.length:0)}</span></div>`;
   $('ip-body').innerHTML=filtered.map(r=>{
     const rc=(+r.avg_hrs||0)*(+r.hourly_rate||0);
+    const num=DIV_NUM[r.division]||'—';
     return`<tr>
       <td style="font-family:monospace;font-size:11px">${r.code}</td>
-      <td>${r.name}</td><td>${r.division}</td>
-      <td style="text-align:right">${r.avg_hrs?r.avg_hrs.toFixed(1):'—'}${r.ca_fallback?' <span class="pill pill-ca">CA</span>':''}</td>
-      <td style="text-align:right">${fc(r.hourly_rate)}${r.ca_fallback?' <span class="pill pill-ca">CA</span>':''}</td>
+      <td>${r.name}</td>
+      <td>
+        <span style="display:inline-block;background:var(--dg);color:#fff;font-size:10px;font-weight:600;padding:1px 6px;border-radius:3px;margin-right:5px;font-family:monospace;min-width:22px;text-align:center">${num}</span>${r.division}
+      </td>
+      <td style="text-align:right">${r.avg_hrs!=null?r.avg_hrs.toFixed(1):'—'}${r.ca_fallback?' <span class="pill pill-ca">CA</span>':''}</td>
+      <td style="text-align:right">${r.hourly_rate!=null?fc(r.hourly_rate):'—'}${r.ca_fallback?' <span class="pill pill-ca">CA</span>':''}</td>
       <td style="text-align:right"><strong>${fc(rc)}</strong></td>
       <td style="font-size:11px">${r.ca_fallback?'CA Average':'Historical'}</td>
       <td><button class="btn btn-sm btn-outline" onclick="editIP('${r.id}')">Edit</button></td></tr>`;
   }).join('');
 }
+let _ipEditId=null;
+
+function addIP(){
+  _ipEditId=null;
+  $('ip-edit-code').value='';
+  $('ip-edit-name').value='';
+  $('ip-edit-division').value='General Conditions';
+  $('ip-edit-hrs').value='';
+  $('ip-edit-rate').value='';
+  $('ip-edit-avg-total').value='';
+  $('ip-edit-ca').checked=false;
+  $('ip-edit-rc').textContent='$0.00';
+  document.querySelector('#ip-modal-overlay h3').textContent='Add IP Systems Item';
+  $('ip-delete-btn').style.display='none';
+  $('ip-modal-overlay').style.display='flex';
+  setTimeout(()=>$('ip-edit-code').focus(),50);
+}
+
 function editIP(id){
-  const all=gd('rw_ip');const r=all.find(x=>String(x.id)===String(id));if(!r)return;
-  const hrs=prompt('Estimated Hours (current: '+r.avg_hrs+')',r.avg_hrs);if(hrs===null)return;
-  const rate=prompt('Hourly Rate (current: $'+r.hourly_rate+')',r.hourly_rate);if(rate===null)return;
-  const i=all.indexOf(r);all[i].avg_hrs=+hrs;all[i].hourly_rate=+rate;all[i].ca_fallback=false;
-  sd('rw_ip',all);toast('Updated');renderIP();
+  const all=gd('rw_ip');
+  const r=all.find(x=>String(x.id)===String(id));
+  if(!r)return;
+  _ipEditId=id;
+  $('ip-edit-code').value=r.code||'';
+  $('ip-edit-name').value=r.name||'';
+  $('ip-edit-division').value=r.division||'General Conditions';
+  $('ip-edit-hrs').value=r.avg_hrs!=null?r.avg_hrs:'';
+  $('ip-edit-rate').value=r.hourly_rate!=null?r.hourly_rate:'';
+  $('ip-edit-avg-total').value=r.avg_total||'';
+  $('ip-edit-ca').checked=r.ca_fallback||false;
+  document.querySelector('#ip-modal-overlay h3').textContent='Edit IP Systems Item';
+  $('ip-delete-btn').style.display='block';
+  ipModalCalc();
+  $('ip-modal-overlay').style.display='flex';
+}
+
+function ipModalCalc(){
+  const hrs=parseFloat($('ip-edit-hrs').value)||0;
+  const rate=parseFloat($('ip-edit-rate').value)||0;
+  $('ip-edit-rc').textContent=fc(hrs*rate);
+}
+
+function closeIPModal(e){
+  if(e.target===$('ip-modal-overlay'))$('ip-modal-overlay').style.display='none';
+}
+
+function saveIPItem(){
+  const code=$('ip-edit-code').value.trim();
+  const name=$('ip-edit-name').value.trim();
+  if(!code){toast('Please enter a CSI Code','error');return;}
+  if(!name){toast('Please enter a name','error');return;}
+  const all=gd('rw_ip');
+  if(_ipEditId){
+    // Edit existing
+    const i=all.findIndex(r=>String(r.id)===String(_ipEditId));
+    if(i<0)return;
+    all[i]={
+      ...all[i],code,name,
+      division:$('ip-edit-division').value,
+      avg_hrs:parseFloat($('ip-edit-hrs').value)||null,
+      hourly_rate:parseFloat($('ip-edit-rate').value)||null,
+      avg_total:parseFloat($('ip-edit-avg-total').value)||null,
+      ca_fallback:$('ip-edit-ca').checked
+    };
+    toast('IP item updated');
+  } else {
+    // Add new
+    const newItem={
+      id:uid(),code,name,
+      division:$('ip-edit-division').value,
+      avg_hrs:parseFloat($('ip-edit-hrs').value)||null,
+      hourly_rate:parseFloat($('ip-edit-rate').value)||null,
+      avg_total:parseFloat($('ip-edit-avg-total').value)||null,
+      ca_fallback:$('ip-edit-ca').checked
+    };
+    all.push(newItem);
+    toast('IP item added');
+  }
+  sd('rw_ip',all);
+  $('ip-modal-overlay').style.display='none';
+  renderIP();
+}
+
+function deleteIPItem(){
+  if(!_ipEditId)return;
+  if(!confirm('Permanently delete this item from IP Systems?'))return;
+  sd('rw_ip',gd('rw_ip').filter(r=>String(r.id)!==String(_ipEditId)));
+  $('ip-modal-overlay').style.display='none';
+  toast('Item deleted','error');
+  renderIP();
 }
 
 // ═══════════════════ COST REFERENCE ═══════════════════
@@ -1412,7 +1799,17 @@ function openModal(type,id){
     $('modal-save-btn').onclick=saveLiability;
   }
   $('modal-overlay').classList.add('open');
-  if(type==='income')setTimeout(()=>modalSvcSelect(),50);
+  if(type==='income'){
+    // Set today as default date if empty
+    const dEl=$('m-date');if(dEl&&!dEl.value)dEl.value=new Date().toISOString().split('T')[0];
+    setTimeout(()=>modalSvcSelect(),80);
+  }
+  if(type==='expense'){
+    const dEl=$('m-date');if(dEl&&!dEl.value)dEl.value=new Date().toISOString().split('T')[0];
+  }
+  if(type==='asset'||type==='liability'){
+    const dEl=$('m-date');if(dEl&&!dEl.value)dEl.value=new Date().toISOString().split('T')[0];
+  }
 }
 
 function modalSvcSelect(){
@@ -1425,43 +1822,91 @@ function modalSvcSelect(){
   modalCalc();
 }
 function modalCalc(){
-  const h=+($('m-hrs')||{}).value,r=+($('m-rate')||{}).value;
-  if(h&&r&&$('m-inv'))$('m-inv').value=(h*r).toFixed(2);
+  const hEl=$('m-hrs'),rEl=$('m-rate'),iEl=$('m-inv');
+  if(!hEl||!rEl||!iEl)return;
+  const h=parseFloat(hEl.value)||0,r=parseFloat(rEl.value)||0;
+  if(h>0&&r>0)iEl.value=(h*r).toFixed(2);
 }
 function closeModal(){$('modal-overlay').classList.remove('open')}
 function closeModalOnOverlay(e){if(e.target===$('modal-overlay'))closeModal()}
 
+function getVal(id){const el=$(id);return el?el.value:'';}
+function getNum(id){const el=$(id);return el&&el.value!==''?parseFloat(el.value)||0:0;}
+
 function saveIncome(){
-  const d={id:_modalId||uid(),date:$('m-date').value,client_name:$('m-client').value,
-    service_type:($('m-svc').value.split('|')[1]||''),csi_code:($('m-svc').value.split('|')[0]||''),
-    est_hours:+$('m-hrs').value||null,hourly_rate:+$('m-rate').value||null,
-    invoice_amount:+$('m-inv').value||0,payment_status:$('m-status').value,
-    notes:$('m-notes').value,created_at:new Date().toISOString()};
+  const svcEl=$('m-svc');
+  const svcParts=svcEl&&svcEl.value?svcEl.value.split('|'):['','','','',''];
+  const hrs=getNum('m-hrs');
+  const rate=getNum('m-rate');
+  const invEl=$('m-inv');
+  // Calculate invoice: use typed value, or hours*rate if available, or 0
+  let invoice=invEl&&invEl.value!==''?parseFloat(invEl.value)||0:0;
+  if(!invoice&&hrs&&rate) invoice=hrs*rate;
+  const d={
+    id:_modalId||uid(),
+    date:getVal('m-date'),
+    client_name:getVal('m-client'),
+    service_type:svcParts[1]||'',
+    csi_code:svcParts[0]||'',
+    est_hours:hrs||null,
+    hourly_rate:rate||null,
+    invoice_amount:invoice,
+    payment_status:getVal('m-status')||'Outstanding',
+    notes:getVal('m-notes'),
+    created_at:new Date().toISOString()
+  };
+  if(!d.client_name){toast('Please enter a client name','error');return;}
   const all=gd('rw_income');
   if(_modalId){const i=all.findIndex(r=>String(r.id)===String(_modalId));if(i>=0)all[i]=d;else all.push(d)}else all.push(d);
   sd('rw_income',all);closeModal();toast('Income saved');renderIncome();
 }
+
 function saveExpense(){
-  const d={id:_modalId||uid(),date:$('m-date').value,category:$('m-cat').value,
-    vendor:$('m-vendor').value,amount:+$('m-amount').value||0,
-    payment_method:$('m-method').value,notes:$('m-notes').value,created_at:new Date().toISOString()};
+  const d={
+    id:_modalId||uid(),
+    date:getVal('m-date'),
+    category:getVal('m-cat'),
+    vendor:getVal('m-vendor'),
+    amount:getNum('m-amount'),
+    payment_method:getVal('m-method')||'Credit Card',
+    notes:getVal('m-notes'),
+    created_at:new Date().toISOString()
+  };
+  if(!d.vendor&&!d.category){toast('Please enter a vendor or category','error');return;}
   const all=gd('rw_expenses');
   if(_modalId){const i=all.findIndex(r=>String(r.id)===String(_modalId));if(i>=0)all[i]=d;else all.push(d)}else all.push(d);
   sd('rw_expenses',all);closeModal();toast('Expense saved');renderExpenses();
 }
+
 function saveAsset(){
-  const d={id:_modalId||uid(),asset_name:$('m-name').value,category:$('m-cat').value,
-    description:$('m-desc').value,purchase_cost:+$('m-purch').value||0,
-    current_value:+$('m-val').value||0,date_acquired:$('m-date').value,
-    useful_life_years:+$('m-life').value||0};
+  const d={
+    id:_modalId||uid(),
+    asset_name:getVal('m-name'),
+    category:getVal('m-cat'),
+    description:getVal('m-desc'),
+    purchase_cost:getNum('m-purch'),
+    current_value:getNum('m-val'),
+    date_acquired:getVal('m-date'),
+    useful_life_years:getNum('m-life')
+  };
+  if(!d.asset_name){toast('Please enter an asset name','error');return;}
   const all=gd('rw_assets');
   if(_modalId){const i=all.findIndex(r=>String(r.id)===String(_modalId));if(i>=0)all[i]=d;else all.push(d)}else all.push(d);
   sd('rw_assets',all);closeModal();toast('Asset saved');renderAssets();
 }
+
 function saveLiability(){
-  const d={id:_modalId||uid(),creditor:$('m-creditor').value,type:$('m-type').value,
-    balance:+$('m-bal').value||0,interest_rate:+$('m-rate').value||0,
-    monthly_payment:+$('m-pmt').value||0,maturity_date:$('m-mat').value,notes:$('m-notes').value};
+  const d={
+    id:_modalId||uid(),
+    creditor:getVal('m-creditor'),
+    type:getVal('m-type'),
+    balance:getNum('m-bal'),
+    interest_rate:getNum('m-rate'),
+    monthly_payment:getNum('m-pmt'),
+    maturity_date:getVal('m-mat'),
+    notes:getVal('m-notes')
+  };
+  if(!d.creditor){toast('Please enter a creditor name','error');return;}
   const all=gd('rw_liabilities');
   if(_modalId){const i=all.findIndex(r=>String(r.id)===String(_modalId));if(i>=0)all[i]=d;else all.push(d)}else all.push(d);
   sd('rw_liabilities',all);closeModal();toast('Liability saved');renderLiabilities();
@@ -1777,6 +2222,38 @@ function estSave(){
   toast('Project saved to Income Tracker!');
 }
 function estReset(){$('est-success').style.display='none';estChecks={};estVals={};initNewProject();}
+
+// ═══════════════════ FORMULAS ═══════════════════
+const FML_DEFAULTS={ebitda:3,contingency:5,builder_fee:12,ca_general:85,ca_arch:175,ca_pm:125};
+
+function getFml(key){
+  const v=localStorage.getItem('rw_fml_'+key);
+  return v!==null?+v:FML_DEFAULTS[key];
+}
+function setFml(key,val){localStorage.setItem('rw_fml_'+key,val);}
+
+function renderFormulas(){
+  const map={ebitda:'fml-ebitda',contingency:'fml-contingency',builder_fee:'fml-builder-fee',
+             ca_general:'fml-ca-general',ca_arch:'fml-ca-arch',ca_pm:'fml-ca-pm'};
+  Object.keys(map).forEach(k=>{const el=$(map[k]);if(el)el.value=getFml(k);});
+  $('fml-saved').style.display='none';
+}
+
+function saveFormulas(){
+  const map={ebitda:'fml-ebitda',contingency:'fml-contingency',builder_fee:'fml-builder-fee',
+             ca_general:'fml-ca-general',ca_arch:'fml-ca-arch',ca_pm:'fml-ca-pm'};
+  Object.keys(map).forEach(k=>{const el=$(map[k]);if(el&&el.value!=='')setFml(k,+el.value);});
+  $('fml-saved').style.display='block';
+  toast('Formulas saved');
+  setTimeout(()=>{const el=$('fml-saved');if(el)el.style.display='none';},4000);
+}
+
+function resetFormulas(){
+  if(!confirm('Reset all multipliers back to defaults?'))return;
+  Object.keys(FML_DEFAULTS).forEach(k=>localStorage.removeItem('rw_fml_'+k));
+  renderFormulas();
+  toast('Reset to defaults');
+}
 
 // ═══════════════════ INIT ═══════════════════
 renderDashboard();
