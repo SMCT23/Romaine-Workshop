@@ -268,7 +268,7 @@ tfoot td{padding:9px 12px;font-size:12px;font-weight:500}
     <a onclick="nav('new-project')" id="nav-new-project"><span class="nav-icon">＋</span><span class="nav-label"> New Project</span></a>
     <a onclick="nav('ongoing-projects')" id="nav-ongoing-projects"><span class="nav-icon">◐</span><span class="nav-label"> Ongoing Projects</span></a>
     <div class="sb-section">Trackers</div>
-    <a onclick="nav('income')" id="nav-income"><span class="nav-icon">↑</span><span class="nav-label"> Income</span></a>
+    <a onclick="nav('time-tracker')" id="nav-time-tracker"><span class="nav-icon">◷</span><span class="nav-label"> Time Tracker</span></a>
     <a onclick="nav('expenses')" id="nav-expenses"><span class="nav-icon">↓</span><span class="nav-label"> Expenses</span></a>
     <a onclick="nav('assets')" id="nav-assets"><span class="nav-icon">◈</span><span class="nav-label"> Assets</span></a>
     <a onclick="nav('liabilities')" id="nav-liabilities"><span class="nav-icon">◇</span><span class="nav-label"> Liabilities</span></a>
@@ -277,6 +277,7 @@ tfoot td{padding:9px 12px;font-size:12px;font-weight:500}
     <a onclick="nav('ip-systems')" id="nav-ip-systems"><span class="nav-icon">◉</span><span class="nav-label"> IP Systems</span></a>
     <a onclick="nav('cost-reference')" id="nav-cost-reference"><span class="nav-icon">⊞</span><span class="nav-label"> Cost Reference</span></a>
     <a onclick="nav('financial-summary')" id="nav-financial-summary"><span class="nav-icon">∑</span><span class="nav-label"> Financial Summary</span></a>
+    <a onclick="nav('cashflow')" id="nav-cashflow"><span class="nav-icon">⇌</span><span class="nav-label"> Cashflow</span></a>
     <div class="sb-section">Settings</div>
     <a onclick="nav('formulas')" id="nav-formulas"><span class="nav-icon">ƒ</span><span class="nav-label"> Formulas</span></a>
   </nav>
@@ -433,7 +434,6 @@ tfoot td{padding:9px 12px;font-size:12px;font-weight:500}
 <div class="page" id="page-ongoing-projects">
   <div class="page-header">
     <h1>Ongoing Projects</h1>
-    <button class="btn-ghost" onclick="openOPModal()">+ New Project</button>
   </div>
   <div class="page-content">
     <div class="summary-bar" id="op-summary"></div>
@@ -565,25 +565,38 @@ tfoot td{padding:9px 12px;font-size:12px;font-weight:500}
   </div>
 </div>
 
-<!-- INCOME -->
-<div class="page" id="page-income">
+<!-- TIME TRACKER -->
+<div class="page" id="page-time-tracker">
   <div class="page-header">
-    <h1>Income Tracker</h1>
-    <button class="btn-ghost" onclick="openModal('income')">+ Add Income</button>
+    <h1>Time Tracker</h1>
+    <span style="font-size:11px;opacity:.7">Project deadlines · progress · completed work</span>
   </div>
   <div class="page-content">
-    <div class="summary-bar" id="income-summary"></div>
+    <div class="summary-bar" id="tt-summary"></div>
+
+    <div class="section-divider" style="margin-top:4px">Active &amp; Upcoming Projects</div>
     <div class="filter-bar">
-      <select id="inc-filter-month" onchange="renderIncome()"><option value="">All Months</option></select>
-      <select id="inc-filter-status" onchange="renderIncome()">
-        <option value="">All Statuses</option><option>Paid</option><option>Outstanding</option><option>Partial</option>
+      <select id="tt-filter-status" onchange="renderTimeTracker()">
+        <option value="">All Active</option>
+        <option value="Planning">Planning</option>
+        <option value="In Progress">In Progress</option>
+        <option value="On Hold">On Hold</option>
+        <option value="overdue">Overdue Only</option>
       </select>
-      <input placeholder="Search client…" id="inc-search" oninput="renderIncome()" style="width:160px"/>
+      <input id="tt-search" placeholder="Search client or project…" oninput="renderTimeTracker()" style="width:200px"/>
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Date</th><th>Client</th><th>Service</th><th>Hours</th><th>Rate</th><th>Invoice</th><th>Status</th><th>Notes</th><th>Actions</th></tr></thead>
-        <tbody id="income-body"></tbody>
+        <thead><tr><th>Client</th><th>Project</th><th>Type</th><th>Start Date</th><th>Est. Completion</th><th>Deadline</th><th>Progress</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="tt-active-body"></tbody>
+      </table>
+    </div>
+
+    <div class="section-divider" style="margin-top:24px">Completed Projects</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Client</th><th>Project</th><th>Type</th><th>Start Date</th><th>Est. Completion</th><th>Contract Value</th><th>Final Costs</th><th>Actions</th></tr></thead>
+        <tbody id="tt-completed-body"></tbody>
       </table>
     </div>
   </div>
@@ -813,7 +826,10 @@ tfoot td{padding:9px 12px;font-size:12px;font-weight:500}
 <div class="page" id="page-financial-summary">
   <div class="page-header">
     <h1>Financial Summary</h1>
-    <button class="btn-ghost" onclick="exportCSV()">Export CSV</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn-ghost" onclick="openModal('income')">+ Log Income</button>
+      <button class="btn-ghost" onclick="exportCSV()">Export CSV</button>
+    </div>
   </div>
   <div class="page-content">
     <div class="summary-bar" id="fin-summary"></div>
@@ -824,6 +840,117 @@ tfoot td{padding:9px 12px;font-size:12px;font-weight:500}
         <tfoot id="fin-foot"></tfoot>
       </table>
     </div>
+  </div>
+</div>
+
+<!-- CASHFLOW -->
+<div class="page" id="page-cashflow">
+  <div class="page-header">
+    <h1>Cashflow</h1>
+    <span style="font-size:11px;opacity:.7">Cash in vs out · running balance · 3-month projection</span>
+  </div>
+  <div class="page-content">
+
+    <!-- Intro explainer tab -->
+    <div style="margin-bottom:14px">
+      <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.cf-info-arrow').textContent=this.nextElementSibling.style.display==='none'?'▸':'▾'" style="background:var(--pg);border:1px solid var(--lg);border-radius:5px;padding:4px 10px;font-family:inherit;font-size:11.5px;color:var(--mg);cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-weight:500">
+        <span class="cf-info-arrow">▸</span> How this works
+      </button>
+      <div style="display:none;background:var(--pg);border:1px solid var(--lg);border-radius:0 5px 5px 5px;padding:12px 16px;font-size:12px;color:var(--txt2);line-height:1.7;margin-top:-1px">
+        Cashflow tracks the actual movement of money in and out each month — not just profit on paper, but real dollars received and spent.
+        The goal is to always have enough cash on hand to cover upcoming expenses, even when invoices are still outstanding.
+        <span style="display:block;margin-top:6px">
+          <strong style="color:var(--txt)">Cash In</strong> = invoices you've actually been paid ·
+          <strong style="color:var(--txt)">Cash Out</strong> = one-time expenses + all recurring overhead &amp; loan payments ·
+          <strong style="color:var(--txt)">Running Balance</strong> = cumulative net from January to now
+        </span>
+      </div>
+    </div>
+
+    <!-- KPI summary -->
+    <div class="summary-bar" id="cf-summary"></div>
+
+    <!-- Chart -->
+    <div class="chart-card mt">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+        <div class="chart-title" style="margin-bottom:0">Monthly Cashflow &amp; Running Balance</div>
+        <div style="font-size:11px;color:var(--txt2);line-height:1.6;max-width:420px;text-align:right">
+          <span style="display:inline-block;width:10px;height:10px;background:rgba(26,106,36,.7);border-radius:2px;margin-right:4px"></span>Green bars = cash received &nbsp;
+          <span style="display:inline-block;width:10px;height:10px;background:rgba(183,28,28,.65);border-radius:2px;margin-right:4px"></span>Red bars = cash spent &nbsp;
+          <span style="display:inline-block;width:18px;height:3px;background:#C8A84B;vertical-align:middle;margin-right:4px"></span>Gold line = running balance &nbsp;·&nbsp; months marked <strong>*</strong> are projected
+        </div>
+      </div>
+      <div style="position:relative;height:260px"><canvas id="cfChart"></canvas></div>
+      <div style="margin-top:10px;font-size:11px;color:var(--txt2);background:var(--pg);border-radius:5px;padding:7px 12px">
+        💡 <strong>How to read this:</strong> If the gold line is trending upward, your business is accumulating cash. If it dips below zero, you've spent more than you've earned since January — time to collect on outstanding invoices or reduce expenses.
+      </div>
+    </div>
+
+    <!-- Monthly detail table -->
+    <div class="section-divider" style="margin-top:24px">Monthly Detail</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px 8px 0 0;border-bottom:none;padding:10px 16px;font-size:12px;color:var(--txt2);line-height:1.6">
+      This table shows every month of the current year. The <strong style="color:var(--txt)">highlighted yellow row</strong> is the current month.
+      <strong style="color:var(--txt)">Cash Out</strong> includes your one-time expenses logged in the Expense Tracker <em>plus</em> all recurring overhead and liability payments from those tabs.
+      <strong style="color:var(--txt)">Running Balance</strong> carries forward — it resets to zero at the start of each year.
+    </div>
+    <div class="table-wrap" style="border-radius:0 0 8px 8px">
+      <table style="font-size:12px">
+        <thead><tr>
+          <th>Month</th>
+          <th title="Total paid invoices received this month">Cash In</th>
+          <th title="One-time expenses + overhead + loan payments">Cash Out</th>
+          <th title="Cash In minus Cash Out for the month">Net</th>
+          <th title="Sum of all monthly nets from January to this month">Running Balance</th>
+          <th>Notes</th>
+        </tr></thead>
+        <tbody id="cf-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Projection table -->
+    <div class="section-divider" style="margin-top:24px">3-Month Forward Projection</div>
+    <div style="background:var(--yellow);border:1px solid var(--gold);border-radius:8px 8px 0 0;border-bottom:none;padding:10px 16px;font-size:12px;color:#666;line-height:1.6">
+      <strong style="color:var(--txt)">How this projection works:</strong>
+      <strong style="color:var(--txt)">Expected In</strong> = all invoices currently marked <em>Outstanding</em> or <em>Partial</em> in the Income Tracker whose date falls in that month.
+      <strong style="color:var(--txt)">Expected Out</strong> = your fixed recurring costs only (overhead + loan payments) — one-time future expenses aren't included since they're unknown.
+      <strong style="color:var(--txt)">Projected Balance</strong> starts from your current Running Balance and adds each month's projected net.
+      <span style="display:block;margin-top:4px;color:#999">To improve accuracy: make sure outstanding invoices in the Income Tracker have correct dates, and keep your Overhead &amp; Liabilities tabs up to date.</span>
+    </div>
+    <div class="table-wrap" style="border-radius:0 0 8px 8px">
+      <table style="font-size:12px">
+        <thead><tr>
+          <th>Month</th>
+          <th title="Outstanding/partial invoices dated in this month">Expected In</th>
+          <th title="Overhead + liability payments (fixed recurring only)">Expected Out</th>
+          <th title="Expected In minus Expected Out">Projected Net</th>
+          <th title="Running Balance + projected nets through this month">Projected Balance</th>
+        </tr></thead>
+        <tbody id="cf-proj-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Project cash exposure -->
+    <div class="section-divider" style="margin-top:24px">Project Cash Exposure</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px 8px 0 0;border-bottom:none;padding:10px 16px;font-size:12px;color:var(--txt2);line-height:1.6">
+      All active (non-completed) projects from the Ongoing Projects tab.
+      <strong style="color:var(--txt)">Remaining Budget</strong> = Contract Value minus Costs to Date — a positive number means you have room left in the budget; negative means you've gone over.
+      This helps you see at a glance which projects are at risk of blowing the budget before they're finished.
+    </div>
+    <div class="table-wrap" style="border-radius:0 0 8px 8px">
+      <table style="font-size:12px">
+        <thead><tr>
+          <th>Client</th>
+          <th>Project</th>
+          <th>Status</th>
+          <th title="Total agreed contract price">Contract Value</th>
+          <th title="Actual costs logged to date">Costs to Date</th>
+          <th title="Contract Value minus Costs to Date. Green = budget remaining, Red = over budget">Remaining Budget</th>
+        </tr></thead>
+        <tbody id="cf-projects-body"></tbody>
+        <tfoot id="cf-projects-foot"></tfoot>
+      </table>
+    </div>
+
   </div>
 </div>
 
@@ -1461,11 +1588,12 @@ function nav(page){
   $('page-'+page).classList.add('active');
   $('nav-'+page).classList.add('active');
   const renders={
-    dashboard:renderDashboard,income:renderIncome,expenses:renderExpenses,
+    dashboard:renderDashboard,'time-tracker':renderTimeTracker,income:renderIncome,expenses:renderExpenses,
     assets:renderAssets,liabilities:renderLiabilities,overhead:renderOverhead,
     'ip-systems':renderIP,'financial-summary':renderFinancial,
     'cost-reference':renderCostRef,'new-project':initNewProject,
-    'formulas':renderFormulas,'ongoing-projects':renderOngoing
+    'formulas':renderFormulas,'ongoing-projects':renderOngoing,
+    'cashflow':renderCashflow
   };
   if(renders[page])renders[page]();
 }
@@ -1594,6 +1722,110 @@ function renderDashboard(){
 function markPaid(id){
   const inc=gd('rw_income');const i=inc.findIndex(r=>String(r.id)===String(id));
   if(i<0)return;inc[i].payment_status='Paid';sd('rw_income',inc);toast('Invoice marked as paid');renderDashboard();
+}
+
+// ---  TIME TRACKER ---
+function renderTimeTracker(){
+  const all=gd('rw_projects');
+  const today=new Date(); today.setHours(0,0,0,0);
+  const statusFilter=$('tt-filter-status')?$('tt-filter-status').value:'';
+  const search=($('tt-search')?$('tt-search').value:'').toLowerCase();
+
+  const active=all.filter(p=>!p.archived&&p.status!=='Completed');
+  const completed=all.filter(p=>p.status==='Completed'||p.archived);
+
+  // Days left helper
+  function daysInfo(p){
+    if(!p.end_date) return {label:'No date set',cls:'',days:null,overdue:false};
+    const end=new Date(p.end_date+'T00:00:00');
+    const diff=Math.ceil((end-today)/(1000*60*60*24));
+    if(diff<0) return{label:Math.abs(diff)+' days overdue',cls:'fin-neg',days:diff,overdue:true};
+    if(diff===0) return{label:'Due today',cls:'fin-neg',days:0,overdue:false};
+    if(diff<=7) return{label:'Due in '+diff+'d',cls:'fin-neg',days:diff,overdue:false};
+    if(diff<=30) return{label:'Due in '+diff+'d',cls:'',days:diff,overdue:false};
+    return{label:'Due in '+diff+'d',cls:'',days:diff,overdue:false};
+  }
+
+  // Row background based on urgency
+  function rowBg(p){
+    if(p.status==='On Hold') return '';
+    const d=daysInfo(p);
+    if(d.overdue) return ' style="background:#fff5f5"';
+    if(d.days!==null&&d.days<=7) return ' style="background:#fff8e1"';
+    if(d.days!==null&&d.days<=30) return ' style="background:#fffde7"';
+    return '';
+  }
+
+  // Status pill helper
+  const statusCls={Planning:'op-planning','In Progress':'op-in-progress','On Hold':'op-on-hold',Completed:'op-completed'};
+
+  // Filter active
+  let filtered=active.filter(p=>{
+    if(statusFilter==='overdue'){const d=daysInfo(p);if(!d.overdue)return false;}
+    else if(statusFilter&&p.status!==statusFilter)return false;
+    if(search&&!((p.client||'').toLowerCase().includes(search))&&!((p.name||'').toLowerCase().includes(search)))return false;
+    return true;
+  });
+  filtered.sort((a,b)=>{
+    if(!a.end_date&&!b.end_date)return 0;
+    if(!a.end_date)return 1;
+    if(!b.end_date)return -1;
+    return new Date(a.end_date)-new Date(b.end_date);
+  });
+
+  // KPIs
+  const overdue=active.filter(p=>{const d=daysInfo(p);return d.overdue;});
+  const dueThisMonth=active.filter(p=>{
+    if(!p.end_date)return false;
+    const e=new Date(p.end_date+'T00:00:00');
+    return e.getFullYear()===today.getFullYear()&&e.getMonth()===today.getMonth()&&!daysInfo(p).overdue;
+  });
+  $('tt-summary').innerHTML=`
+    <div class="summary-item"><label>Active Projects</label><span>${active.length}</span><div style="font-size:10px;color:var(--txt2);margin-top:2px">Planning + In Progress + On Hold</div></div>
+    <div class="summary-item"><label>Overdue</label><span class="${overdue.length>0?'neg':''}">${overdue.length}</span><div style="font-size:10px;color:var(--txt2);margin-top:2px">End date passed, not completed</div></div>
+    <div class="summary-item"><label>Due This Month</label><span class="${dueThisMonth.length>0?'':'pos'}">${dueThisMonth.length}</span><div style="font-size:10px;color:var(--txt2);margin-top:2px">Estimated completion this month</div></div>
+    <div class="summary-item"><label>Completed</label><span class="pos">${completed.length}</span><div style="font-size:10px;color:var(--txt2);margin-top:2px">All time</div></div>`;
+
+  // Active table
+  $('tt-active-body').innerHTML=filtered.length?filtered.map(p=>{
+    const d=daysInfo(p);
+    const pct=Math.min(100,Math.max(0,+p.progress||0));
+    const urgentBadge=d.overdue?'<span style="background:var(--red);color:#fff;font-size:10px;padding:1px 5px;border-radius:3px;margin-left:5px">OVERDUE</span>':
+      (d.days!==null&&d.days<=7?'<span style="background:var(--gold);color:#fff;font-size:10px;padding:1px 5px;border-radius:3px;margin-left:5px">SOON</span>':'');
+    return`<tr${rowBg(p)}>
+      <td><strong>${p.client||'—'}</strong></td>
+      <td style="font-size:12px">${p.name||'—'}</td>
+      <td style="font-size:11.5px;color:var(--txt2)">${p.type||'—'}</td>
+      <td style="font-size:12px">${p.start_date?fd(p.start_date):'—'}</td>
+      <td style="font-size:12px">${p.end_date?fd(p.end_date):'—'}</td>
+      <td style="font-size:12px"><span class="${d.cls}">${d.label}</span>${urgentBadge}</td>
+      <td style="min-width:100px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:var(--mg);border-radius:3px"></div>
+          </div>
+          <span style="font-size:11px;color:var(--txt2);white-space:nowrap">${pct}%</span>
+        </div>
+      </td>
+      <td><span class="op-status-pill ${statusCls[p.status]||''}">${p.status||'—'}</span></td>
+      <td class="action-btns"><button class="btn btn-sm btn-outline" onclick="openOPModal('${p.id}')">Edit</button></td></tr>`;
+  }).join(''):'<tr><td colspan="9"><div class="empty-state">No active projects match your filter.</div></td></tr>';
+
+  // Completed table
+  const sortedCompleted=[...completed].sort((a,b)=>new Date(b.end_date||0)-new Date(a.end_date||0));
+  $('tt-completed-body').innerHTML=sortedCompleted.length?sortedCompleted.map(p=>{
+    const statusLabel=p.archived&&p.status!=='Completed'?'Archived':'Completed';
+    const sc=p.archived&&p.status!=='Completed'?'op-archived':'op-completed';
+    return`<tr>
+      <td><strong>${p.client||'—'}</strong></td>
+      <td style="font-size:12px">${p.name||'—'}</td>
+      <td style="font-size:11.5px;color:var(--txt2)">${p.type||'—'}</td>
+      <td style="font-size:12px">${p.start_date?fd(p.start_date):'—'}</td>
+      <td style="font-size:12px">${p.end_date?fd(p.end_date):'—'}</td>
+      <td style="text-align:right">${+p.contract_value>0?fc(p.contract_value):'—'}</td>
+      <td style="text-align:right">${+p.actual_costs>0?fc(p.actual_costs):'—'}</td>
+      <td class="action-btns"><button class="btn btn-sm btn-outline" onclick="openOPModal('${p.id}')">View</button></td></tr>`;
+  }).join(''):'<tr><td colspan="8"><div class="empty-state">No completed projects yet.</div></td></tr>';
 }
 
 // ---  INCOME ---
@@ -1768,7 +2000,8 @@ function renderOverhead(){
         <td>${r.item}</td>
         <td style="text-align:right"><input class="inline-edit" type="number" value="${r.monthly_cost||0}" onchange="updateOverhead('${r.id}',this.value)"/></td>
         <td style="text-align:right">${fc((+r.monthly_cost||0)*12)}</td>
-        <td style="color:var(--txt2);font-size:11.5px">${r.vendor_notes||''}</td></tr>`;
+        <td style="color:var(--txt2);font-size:11.5px">${r.vendor_notes||''}</td>
+        <td class="action-btns"><button class="btn btn-sm btn-outline" onclick="openOHModal('${r.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('rw_oh','${r.id}',renderOverhead)">Del</button></td></tr>`;
     });
   });
   $('overhead-body').innerHTML=html;
@@ -1782,6 +2015,41 @@ function updateOverhead(id,val){
     <div class="summary-item"><label>Monthly Overhead</label><span class="neg">${fc(total)}</span></div>
     <div class="summary-item"><label>Annual Overhead</label><span class="neg">${fc(total*12)}</span></div>`;
   toast('Updated');
+}
+
+let _ohEditId=null;
+function openOHModal(id){
+  _ohEditId=id||null;
+  const rec=id?gd('rw_oh').find(r=>String(r.id)===String(id)):null;
+  $('oh-modal-title').textContent=id?'Edit Overhead Item':'Add Overhead Item';
+  $('oh-cat').value=rec?rec.category:'';
+  $('oh-item').value=rec?rec.item:'';
+  $('oh-cost').value=rec?(rec.monthly_cost||0):'';
+  $('oh-notes').value=rec?(rec.vendor_notes||''):'';
+  $('oh-annual-display').textContent=rec?fc((+rec.monthly_cost||0)*12):'$0.00';
+  $('oh-delete-btn').style.display=id?'':'none';
+  $('oh-modal-overlay').style.display='flex';
+}
+function closeOHModalOverlay(e){if(e.target===$('oh-modal-overlay'))$('oh-modal-overlay').style.display='none';}
+function ohCalcAnnual(){const v=+$('oh-cost').value||0;$('oh-annual-display').textContent=fc(v*12);}
+function saveOHItem(){
+  const cat=$('oh-cat').value.trim(),item=$('oh-item').value.trim(),cost=+$('oh-cost').value||0,notes=$('oh-notes').value.trim();
+  if(!cat||!item){toast('Category and Item are required','error');return;}
+  const all=gd('rw_oh');
+  if(_ohEditId){
+    const i=all.findIndex(r=>String(r.id)===String(_ohEditId));
+    if(i>=0){all[i]={...all[i],category:cat,item,monthly_cost:cost,vendor_notes:notes};sd('rw_oh',all);}
+  } else {
+    all.push({id:uid(),category:cat,item,monthly_cost:cost,vendor_notes:notes});
+    sd('rw_oh',all);
+  }
+  $('oh-modal-overlay').style.display='none';
+  renderOverhead();toast(_ohEditId?'Updated':'Item added');
+}
+function deleteOHItem(){
+  if(!_ohEditId)return;
+  const all=gd('rw_oh').filter(r=>String(r.id)!==String(_ohEditId));
+  sd('rw_oh',all);$('oh-modal-overlay').style.display='none';renderOverhead();toast('Deleted');
 }
 
 // ---  IP SYSTEMS ---
@@ -2001,6 +2269,130 @@ function renderFinancial(){
   $('fin-body').innerHTML=rows;
   $('fin-foot').innerHTML=`<td>ANNUAL TOTALS</td><td style="text-align:right">${fc(totalRev)}</td><td style="text-align:right">${fc(totalExp)}</td><td style="text-align:right">${fc(totalRev-totalExp)}</td><td style="text-align:right">${totalRev>0?fp((totalRev-totalExp)/totalRev):'—'}</td><td colspan="4"></td>`;
 }
+
+// ---  CASHFLOW ---
+let cfChart=null;
+function renderCashflow(){
+  const income=gd('rw_income'),expenses=gd('rw_expenses'),overhead=gd('rw_oh'),liabilities=gd('rw_liabilities'),projects=gd('rw_projects').filter(p=>!p.archived);
+  const now=new Date();
+  const yr=now.getFullYear();
+  const curMo=now.getMonth()+1;
+  const todayYM=yr+'-'+String(curMo).padStart(2,'0');
+
+  const ohMonthly=overhead.reduce((s,r)=>s+(+r.monthly_cost||0),0);
+  const liabMonthly=liabilities.reduce((s,r)=>s+(+r.monthly_payment||0),0);
+  const fixedOut=ohMonthly+liabMonthly;
+
+  // Historical: Jan through current month
+  const histKeys=[];
+  for(let m=1;m<=curMo;m++) histKeys.push(yr+'-'+String(m).padStart(2,'0'));
+
+  // Future: next 3 months
+  const futureKeys=[];
+  for(let i=1;i<=3;i++){
+    const d=new Date(yr,curMo-1+i,1);
+    futureKeys.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
+  }
+
+  let runningBal=0,ytdIn=0,ytdOut=0;
+  const chartLabels=[],chartIn=[],chartOut=[],chartBal=[];
+  let rows='';
+
+  histKeys.forEach(k=>{
+    const cashIn=income.filter(r=>r.payment_status==='Paid'&&ym(r.date)===k).reduce((s,r)=>s+(+r.invoice_amount||0),0);
+    const oneTime=expenses.filter(r=>ym(r.date)===k).reduce((s,r)=>s+(+r.amount||0),0);
+    const cashOut=oneTime+fixedOut;
+    const net=cashIn-cashOut;
+    runningBal+=net; ytdIn+=cashIn; ytdOut+=cashOut;
+    const hasData=cashIn>0||oneTime>0||fixedOut>0;
+    const lbl=monthLabel(k);
+    chartLabels.push(lbl); chartIn.push(cashIn); chartOut.push(cashOut); chartBal.push(runningBal);
+    const note=oneTime>0?'+'+fc(oneTime)+' one-time exp':'';
+    rows+=`<tr${k===todayYM?' style="background:var(--yellow)"':''}>
+      <td style="font-weight:500">${lbl}${k===todayYM?' <span style="font-size:10px;background:var(--gold);color:#fff;padding:1px 5px;border-radius:3px">now</span>':''}</td>
+      <td style="text-align:right" class="${cashIn>0?'fin-pos':''}">${cashIn>0?fc(cashIn):'—'}</td>
+      <td style="text-align:right" class="${cashOut>0?'fin-neg':''}">${cashOut>0?fc(cashOut):'—'}</td>
+      <td style="text-align:right" class="${hasData?(net>0?'fin-pos':net<0?'fin-neg':''):''}">${hasData?fc(net):'—'}</td>
+      <td style="text-align:right" class="${runningBal>=0?'fin-pos':'fin-neg'}">${fc(runningBal)}</td>
+      <td style="font-size:11px;color:var(--txt2)">${note}</td></tr>`;
+  });
+
+  const ytdNet=ytdIn-ytdOut;
+
+  // Projection
+  let projBal=runningBal,proj3Net=0,projRows='';
+  futureKeys.forEach(k=>{
+    const expectedIn=income.filter(r=>(r.payment_status==='Outstanding'||r.payment_status==='Partial')&&ym(r.date)===k).reduce((s,r)=>s+(+r.invoice_amount||0),0);
+    const projNet=expectedIn-fixedOut;
+    projBal+=projNet; proj3Net+=projNet;
+    chartLabels.push(monthLabel(k)+' *'); chartIn.push(expectedIn); chartOut.push(fixedOut); chartBal.push(projBal);
+    projRows+=`<tr style="background:var(--yellow)">
+      <td style="font-weight:500">${monthLabel(k)} <span style="font-size:10px;color:var(--txt2)">(projected)</span></td>
+      <td style="text-align:right;color:var(--mg)">${expectedIn>0?fc(expectedIn):'—'}</td>
+      <td style="text-align:right;color:var(--red)">${fixedOut>0?fc(fixedOut):'—'}</td>
+      <td style="text-align:right" class="${projNet>=0?'fin-pos':'fin-neg'}">${fc(projNet)}</td>
+      <td style="text-align:right" class="${projBal>=0?'fin-pos':'fin-neg'}">${fc(projBal)}</td></tr>`;
+  });
+
+  const kpiSub=s=>`<div style="font-size:10px;color:var(--txt2);margin-top:2px">${s}</div>`;
+  $('cf-summary').innerHTML=`
+    <div class="summary-item"><label>YTD Cash In</label><span class="pos">${fc(ytdIn)}</span>${kpiSub('Paid invoices Jan – now')}</div>
+    <div class="summary-item"><label>YTD Cash Out</label><span class="neg">${fc(ytdOut)}</span>${kpiSub('Expenses + overhead + loans')}</div>
+    <div class="summary-item"><label>YTD Net</label><span class="${ytdNet>=0?'pos':'neg'}">${fc(ytdNet)}</span>${kpiSub('In minus Out this year')}</div>
+    <div class="summary-item"><label>Running Balance</label><span class="${runningBal>=0?'pos':'neg'}">${fc(runningBal)}</span>${kpiSub('Cumulative net since Jan')}</div>
+    <div class="summary-item"><label>3-Mo Projected Net</label><span class="${proj3Net>=0?'pos':'neg'}">${fc(proj3Net)}</span>${kpiSub('Based on outstanding invoices')}</div>
+    <div class="summary-item"><label>Monthly Fixed Costs</label><span class="neg">${fc(fixedOut)}/mo</span>${kpiSub('Overhead + loan payments')}</div>`;
+
+  $('cf-body').innerHTML=rows||'<tr><td colspan="6"><div class="empty-state">No data yet for this year.</div></td></tr>';
+  $('cf-proj-body').innerHTML=projRows;
+
+  // Project cash exposure
+  const activeProj=projects.filter(p=>p.status!=='Completed');
+  let pTotalC=0,pTotalA=0;
+  const projHtml=activeProj.length?activeProj.map(p=>{
+    const c=+p.contract_value||0,a=+p.actual_costs||0,rem=c-a;
+    pTotalC+=c; pTotalA+=a;
+    const sc={'Planning':'op-planning','In Progress':'op-in-progress','On Hold':'op-on-hold'}[p.status]||'';
+    return`<tr>
+      <td><strong>${p.client||'—'}</strong></td>
+      <td style="font-size:12px;color:var(--txt2)">${p.name||'—'}</td>
+      <td><span class="op-status-pill ${sc}">${p.status||'—'}</span></td>
+      <td style="text-align:right">${c>0?fc(c):'—'}</td>
+      <td style="text-align:right">${a>0?fc(a):'—'}</td>
+      <td style="text-align:right" class="${rem>=0?'fin-pos':'fin-neg'}">${c>0?fc(rem):'—'}</td></tr>`;
+  }).join(''):'<tr><td colspan="6"><div class="empty-state">No active projects.</div></td></tr>';
+  $('cf-projects-body').innerHTML=projHtml;
+  if(activeProj.length){
+    const rem=pTotalC-pTotalA;
+    $('cf-projects-foot').innerHTML=`<tr><td colspan="3">TOTALS</td><td style="text-align:right">${fc(pTotalC)}</td><td style="text-align:right">${fc(pTotalA)}</td><td style="text-align:right" class="${rem>=0?'fin-pos':'fin-neg'}">${fc(rem)}</td></tr>`;
+  } else {
+    $('cf-projects-foot').innerHTML='';
+  }
+
+  // Chart — bars for In/Out + line for running balance
+  if(cfChart)cfChart.destroy();
+  cfChart=new Chart($('cfChart'),{
+    type:'bar',
+    data:{
+      labels:chartLabels,
+      datasets:[
+        {type:'bar',label:'Cash In',data:chartIn,backgroundColor:'rgba(26,106,36,.7)',borderRadius:3,order:2},
+        {type:'bar',label:'Cash Out',data:chartOut,backgroundColor:'rgba(183,28,28,.65)',borderRadius:3,order:2},
+        {type:'line',label:'Running Balance',data:chartBal,borderColor:'#C8A84B',backgroundColor:'rgba(200,168,75,.1)',tension:.3,fill:false,pointRadius:3,borderWidth:2,yAxisID:'y1',order:1}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:10},padding:10}}},
+      scales:{
+        y:{ticks:{callback:v=>'$'+v.toLocaleString(),font:{size:9}},grid:{color:'rgba(0,0,0,.05)'}},
+        y1:{position:'right',ticks:{callback:v=>'$'+v.toLocaleString(),font:{size:9}},grid:{display:false}},
+        x:{ticks:{font:{size:9}},grid:{display:false}}
+      }
+    }
+  });
+}
+
 function exportCSV(){
   const income=gd('rw_income'),expenses=gd('rw_expenses'),overhead=gd('rw_oh');
   const burn=overhead.reduce((s,r)=>s+(+r.monthly_cost||0),0);
