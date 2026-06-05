@@ -574,7 +574,18 @@ tfoot td{padding:9px 12px;font-size:12px;font-weight:500}
   <div class="page-content">
     <div class="summary-bar" id="tt-summary"></div>
 
-    <div class="section-divider" style="margin-top:4px">Active &amp; Upcoming Projects</div>
+    <div class="grid2 mt">
+      <div class="chart-card">
+        <div class="chart-title">Project Status Breakdown</div>
+        <div style="position:relative;height:200px"><canvas id="ttStatusChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Active Project Progress</div>
+        <div style="position:relative;height:200px;overflow-y:auto"><canvas id="ttProgressChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-divider" style="margin-top:16px">Active &amp; Upcoming Projects</div>
     <div class="filter-bar">
       <select id="tt-filter-status" onchange="renderTimeTracker()">
         <option value="">All Active</option>
@@ -1614,6 +1625,7 @@ function toast(msg,type='success'){
 
 // ---  DASHBOARD ---
 let revChart=null;
+let ttStatusChart=null,ttProgressChart=null;
 function renderDashboard(){
   $('dash-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   const income=gd('rw_income'),expenses=gd('rw_expenses'),assets=gd('rw_assets'),liabilities=gd('rw_liabilities'),ip=gd('rw_ip');
@@ -1826,6 +1838,45 @@ function renderTimeTracker(){
       <td style="text-align:right">${+p.actual_costs>0?fc(p.actual_costs):'—'}</td>
       <td class="action-btns"><button class="btn btn-sm btn-outline" onclick="openOPModal('${p.id}')">View</button></td></tr>`;
   }).join(''):'<tr><td colspan="8"><div class="empty-state">No completed projects yet.</div></td></tr>';
+
+  // --- Charts ---
+  // Status donut
+  const statusCounts={Planning:0,'In Progress':0,'On Hold':0,Overdue:0,Completed:0};
+  active.forEach(p=>{const d=daysInfo(p);if(d.overdue)statusCounts.Overdue++;else statusCounts[p.status]=(statusCounts[p.status]||0)+1;});
+  statusCounts.Completed=completed.length;
+  const sLabels=Object.keys(statusCounts).filter(k=>statusCounts[k]>0);
+  const sData=sLabels.map(k=>statusCounts[k]);
+  const sColors={'Planning':'rgba(13,71,161,.75)','In Progress':'rgba(27,94,32,.75)','On Hold':'rgba(245,127,23,.75)','Overdue':'rgba(183,28,28,.8)','Completed':'rgba(74,20,140,.75)'};
+  if(ttStatusChart)ttStatusChart.destroy();
+  if($('ttStatusChart')){
+    ttStatusChart=new Chart($('ttStatusChart'),{
+      type:'doughnut',
+      data:{labels:sLabels,datasets:[{data:sData,backgroundColor:sLabels.map(l=>sColors[l]),borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+        plugins:{legend:{position:'right',labels:{boxWidth:10,font:{size:10},padding:10}},
+        tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+ctx.raw}}}}
+    });
+  }
+
+  // Progress horizontal bar (active projects, sorted by progress desc)
+  const progProjects=[...active].sort((a,b)=>(+b.progress||0)-(+a.progress||0)).slice(0,10);
+  const progLabels=progProjects.map(p=>(p.client||'?').slice(0,12)+(p.name?' · '+(p.name||'').slice(0,12):''));
+  const progData=progProjects.map(p=>Math.min(100,Math.max(0,+p.progress||0)));
+  const progColors=progProjects.map(p=>{const d=daysInfo(p);return d.overdue?'rgba(183,28,28,.7)':d.days!==null&&d.days<=7?'rgba(200,168,75,.8)':'rgba(26,106,36,.7)';});
+  if(ttProgressChart)ttProgressChart.destroy();
+  if($('ttProgressChart')){
+    const barHeight=Math.max(200,progProjects.length*32+40);
+    $('ttProgressChart').parentElement.style.height=barHeight+'px';
+    $('ttProgressChart').style.height=barHeight+'px';
+    ttProgressChart=new Chart($('ttProgressChart'),{
+      type:'bar',
+      data:{labels:progLabels,datasets:[{label:'Progress %',data:progData,backgroundColor:progColors,borderRadius:3,barThickness:14}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.raw+'%'}}},
+        scales:{x:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:9}},grid:{color:'rgba(0,0,0,.05)'}},
+          y:{ticks:{font:{size:10}},grid:{display:false}}}}
+    });
+  }
 }
 
 // ---  INCOME ---
